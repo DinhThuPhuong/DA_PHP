@@ -107,10 +107,49 @@ public function update_Profile(Request $request, int $id)
         return response()->json($data, 200);
     }
 
+
     }
 
 
-    //Xoa UserUser
+    //Xoa UserUser chuc nang danh cho admin
+    public function delete(int $id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'message'=> "User with $id not found",
+            ], 404);
+        }
+        $user->delete();
+
+        $data = [
+            "status"=> 200,
+            "message"=> "Successfully deleted User"
+        ];
+
+        return response()->json($data, 200);
+        
+    }
+
+    //Hien thi thong tin profile
+    public function display(int $id)
+    {
+        //Kiem tra su ton tai cua User
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'message'=> "User with $id not found",
+            ],404);
+        }
+        $data = [
+            "status" => 200,
+            "user" => $user
+        ];
+
+        return response()->json($data, 200);
+        
+
+    }
    
 
 
