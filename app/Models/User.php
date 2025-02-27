@@ -19,13 +19,10 @@ class User extends Authenticatable
      */
     protected $table = "users";
     protected $fillable = [
-        'firstName',
-        'lastName',
+        
         'email',
-        'avatar',
-        'phoneNumber',
-        'role_id',
-        'password',
+       
+        'password'
     ];
 
     /**
@@ -43,11 +40,11 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
+    // protected function casts(): array
+    // {
+    //     return [
            
-            'password' => 'hashed'
-        ];
-    }
+    //         'password' => 'hashed'
+    //     ];
+    // }
 }
