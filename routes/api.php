@@ -23,6 +23,7 @@ Route::prefix('category')->group(function () {
 Route::prefix('user')->group(function () {
     Route::get('/', [UserController::class, 'index']);
     Route::post('/create', [UserController::class, 'create']);
+    Route::put('/update/{id}', [UserController::class,'update_Profile']);
 
   
 });

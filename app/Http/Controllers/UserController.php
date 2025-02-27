@@ -62,12 +62,14 @@ class UserController extends Controller
 }
 
 //Chinh sua UserUser
-public function update(Request $request, int $id)
+public function update_Profile(Request $request, int $id)
 {
     //Kiem tra du lieu hop lele
     $validator = Validator::make($request->all(), [
-        'email' => 'required|email',
-        'password'=> 'required|password'
+        'firstName' => 'nullable',
+        'lastName'=> 'nullable',
+        'avatar' => 'nullable',
+        'phoneNumber' => 'nullable',
     ]);
 
     if ($validator->fails()) {
@@ -87,8 +89,10 @@ public function update(Request $request, int $id)
         }
 
         //Gan gia tri moi cho thuoc tinh namename
-        $user->email = $request->email;
-        $user->password = $request->password;
+        $user->firstName = $request->firstName;
+        $user->lastName = $request->lastName;
+        $user->phoneNumber = $request->phoneNumber;
+        $user->avatar = $request->avatar;
 
         //Luu vao csdlcsdl
         $user->save();
@@ -107,24 +111,7 @@ public function update(Request $request, int $id)
 
 
     //Xoa UserUser
-    public function delete(int $id)
-    {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json([
-                'message'=> "User with $id not found",
-            ], 404);
-        }
-        $user->delete();
-
-        $data = [
-            "status"=> 200,
-            "message"=> "Successfully deleted User"
-        ];
-
-        return response()->json($data, 200);
-        
-    }
+   
 
 
 }
