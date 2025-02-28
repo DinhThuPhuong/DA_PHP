@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StoreController;
 
 Route::middleware('auth:sanctum')->get('/user', function( Request $request)
 {
@@ -28,4 +29,11 @@ Route::prefix('user')->group(function () {
     Route::delete('/delete/{id}', [UserController::class,'delete']);
 
   
+});
+
+//StoreController
+Route::prefix('store')->group(function () {
+    Route::get('/', [StoreController::class, 'index']);
+    Route::post('/create/{user_id}', [StoreController::class, 'create']);
+    
 });
