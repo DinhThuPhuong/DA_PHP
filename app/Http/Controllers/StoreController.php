@@ -133,6 +133,40 @@ public function update_profile(Request $request, int $user_id)
     ], 200);
 }
 
+public function findStoreById(int $store_id)
+{
+    $store = Store::find($store_id);
+    if (!$store) {
+        return response()->json([
+            "status" => 404,
+            "message" =>"Store with id = $store_id not found"
+        ],404);
+    }
+    
+    return  response()->json([
+        "status"=> 200,
+        "store" => $store
+    ]);
+
+}
+
+public function findStoreByOwnId(int $user_id)
+{
+    $store = Store::where('ownId', $user_id)->first();
+    if (!$store) {
+        return response()->json([
+            "status" => 404,
+            "message" =>"Store with ownId = $user_id not found"
+        ],404);
+    }
+    
+    return response()->json([
+        "status"=> 200,
+        "store" => $store
+    ]);
+
+}
+
 
 
     

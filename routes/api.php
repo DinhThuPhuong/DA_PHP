@@ -36,5 +36,7 @@ Route::prefix('store')->group(function () {
     Route::get('/', [StoreController::class, 'index']);
     Route::post('/create/{user_id}', [StoreController::class, 'create']);
     Route::put('/update/{user_id}', [StoreController::class, 'update_profile']);
+    Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
+    Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
     
 });
