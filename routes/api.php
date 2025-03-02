@@ -6,7 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StoreController;
 
-Route::middleware('auth:sanctum')->get('/user', function( Request $request)
+Route::middleware('auth:sanctum')->get('/user/profile', function( Request $request)
 {
     return $request->user();
 });
@@ -35,5 +35,6 @@ Route::prefix('user')->group(function () {
 Route::prefix('store')->group(function () {
     Route::get('/', [StoreController::class, 'index']);
     Route::post('/create/{user_id}', [StoreController::class, 'create']);
+    Route::put('/update/{user_id}', [StoreController::class, 'update_profile']);
     
 });
