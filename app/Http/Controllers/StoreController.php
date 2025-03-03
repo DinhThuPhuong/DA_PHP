@@ -166,6 +166,33 @@ public function findStoreByOwnId(int $user_id)
     ]);
 
 }
+// public function deleteStore(int $store_id)
+// {
+//     $store = Store::find($store_id);
+    
+//     if (!$store) {
+//         return response()->json([
+//             "status" => 404,
+//             "message" => "Store not found"
+//         ], 404);
+//     }
+    
+//     // Kiểm tra quyền sở hữu: chỉ cho phép chủ cửa hàng được xóa
+//     if ($store->ownId !== auth()->id()) {
+//         return response()->json([
+//             "status"  => 403,
+//             "message" => "You are not authorized to delete this store."
+//         ], 403);
+//     }
+    
+//     $store->delete();
+    
+//     return response()->json([
+//         "status"  => 200,
+//         "message" => "Store deleted successfully"
+//     ], 200);
+// }
+
 
 
 
