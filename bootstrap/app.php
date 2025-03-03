@@ -12,8 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Đăng ký middleware toàn cục (áp dụng cho mọi request)
+        // $middleware->append(\App\Http\Middleware\JwtMiddleware::class);
+
+        // Đăng ký middleware cho route (tương đương `routeMiddleware` trước đây)
+        $middleware->alias([
+            'jwt.auth' => \App\Http\Middleware\JwtMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+?>

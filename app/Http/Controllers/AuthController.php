@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -42,13 +43,30 @@ class AuthController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+    // if (!$token = Auth::attempt($credentials)) { // Dùng Auth::attempt thay vì JWTAuth::attempt
+    //     return response()->json(['error' => 'Unauthorized'], 401);
+    // }
+
         return $this->respondWithToken($token);
     }
 
     public function getUser()
     {
-        $user = JWTAuth::parseToken()->authenticate();
-        return response()->json($user);
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+    
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+    
+            return response()->json($user);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json(['error' => 'Token has expired'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json(['error' => 'Token is invalid'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json(['error' => 'Token not provided'], 401);
+        }
     }
 
     protected function respondWithToken($token)

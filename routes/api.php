@@ -47,7 +47,7 @@ Route::prefix('store')->group(function () {
 //JWT
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
-Route::middleware('auth:api')->get('user', [AuthController::class, 'getUser']);
+Route::middleware('jwt.auth')->get('user', [AuthController::class, 'getUser']);
 
 Route::middleware([JwtMiddleware::class])->group(function () {
     Route::get('user', [AuthController::class, 'getUser']);
