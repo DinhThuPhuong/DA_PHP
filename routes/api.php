@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\AuthController;
+use App\Http\Middleware\JwtMiddleware;
 
 Route::middleware('auth:sanctum')->get('/user/profile', function( Request $request)
 {
@@ -39,4 +41,14 @@ Route::prefix('store')->group(function () {
     Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
     Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
     
+});
+
+
+//JWT
+Route::post('login', [AuthController::class, 'login']);
+Route::post('register', [AuthController::class, 'register']);
+Route::middleware('auth:api')->get('user', [AuthController::class, 'getUser']);
+
+Route::middleware([JwtMiddleware::class])->group(function () {
+    Route::get('user', [AuthController::class, 'getUser']);
 });
