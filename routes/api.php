@@ -49,10 +49,17 @@ Route::prefix('role')->group(function () {
 //StoreController
 Route::prefix('store')->group(function () {
     Route::get('/', [StoreController::class, 'index']);
-    Route::post('/create/{user_id}', [StoreController::class, 'create']);
-    Route::put('/update/{user_id}', [StoreController::class, 'update_profile']);
     Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
     Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
+   
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/myStore', [StoreController::class, 'myStore']);
+        Route::post('/create', [StoreController::class, 'create']);
+        Route::put('/update', [StoreController::class, 'update_profile']);
+        Route::delete('/delete-store', [StoreController::class,'deleteStore']);
+    });
+    
     
 
 });

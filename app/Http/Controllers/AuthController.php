@@ -58,6 +58,7 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        Log::info('LoginByMe');
         $credentials = $request->validate([
             'email'    => 'required|email',
             'password' => 'required|min:6',
