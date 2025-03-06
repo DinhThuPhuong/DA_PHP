@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Product extends Model
 {
      //Dat ten cho table trong csdlcsdl
@@ -24,4 +26,7 @@ class Product extends Model
          'soldQuantity',
          'productDetail',
      ];
+     public function images(): HasMany {
+        return $this->hasMany(ImageDetail::class, 'product_id');
+    }
 }
