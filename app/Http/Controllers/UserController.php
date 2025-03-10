@@ -60,7 +60,7 @@ class UserController extends Controller
             'firstName'        => 'required|string|max:255',
             'lastName'        => 'required|string|max:255',
             'avatar'      => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:2048', // Validate file ảnh
-            'phoneNumber' => 'nullable|string|max:20',
+            'phoneNumber' => '|string|required|max:20',
         ]);
         
         if ($validator->fails()) {
@@ -81,8 +81,12 @@ class UserController extends Controller
         }
         
         // Cap nhat thong tin moi neu nguoi dung nhap thong tin moi
-        if($request->has('name') && trim($request->name) !== '') 
-            $user->name = $request->name;
+        if($request->has('firstName') && trim($request->firstName) !== '') 
+            $user->firstName = $request->firstName;
+
+            if($request->has('lastName') && trim($request->lastName) !== '') 
+            $user->lastName = $request->lastName;
+
         if($request->has('phoneNumber') && trim($request->phoneNumber) != '') 
             $user->phoneNumber = $request->phoneNumber;
 
