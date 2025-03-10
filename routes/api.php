@@ -7,6 +7,11 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\FollowerController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\UserNotificationController;
+use App\Http\Controllers\StoreNotificationController;
+
 
 Route::middleware('auth:sanctum')->get('/user/profile', function( Request $request)
 {
@@ -58,6 +63,10 @@ Route::prefix('store')->group(function () {
         Route::post('/create', [StoreController::class, 'create']);
         Route::post('/update', [StoreController::class, 'update_profile']);
         Route::delete('/delete-store', [StoreController::class,'deleteStore']);
+        Route::apiResource('user-notifications', UserNotificationController::class);
+        Route::apiResource('store-notifications', StoreNotificationController::class);
+        Route::apiResource('messages', MessageController::class);
+        Route::apiResource('followers', FollowerController::class);
     });
     
     

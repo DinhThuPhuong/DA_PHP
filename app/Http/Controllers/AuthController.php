@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -80,7 +81,6 @@ class AuthController extends Controller
         }
         $token = $user->createToken('api-token')->plainTextToken;
 
-    
         return response()->json([
             'status'  => 200,
             'message' => 'Login successful',
