@@ -30,7 +30,7 @@ Route::prefix('user')->group(function () {
 
     // Cac route danh cho nguoi dung, can xac thuc tai khoan moi co the dung
     Route::middleware('auth:sanctum')->group(function () {
-        Route::put('/update-profile', [UserController::class, 'updateProfile']);
+        Route::post('/update-profile', [UserController::class, 'updateProfile']);
         Route::delete('/delete', [UserController::class, 'deleteUser']);
         Route::get('/getProfile', [UserController::class, 'getProfile']);
     });
@@ -56,7 +56,7 @@ Route::prefix('store')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/myStore', [StoreController::class, 'myStore']);
         Route::post('/create', [StoreController::class, 'create']);
-        Route::put('/update', [StoreController::class, 'update_profile']);
+        Route::post('/update', [StoreController::class, 'update_profile']);
         Route::delete('/delete-store', [StoreController::class,'deleteStore']);
     });
     
