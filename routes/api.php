@@ -9,6 +9,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ImageDetailController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderDetailController;
 
 Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
     return $request->user();
@@ -93,4 +95,30 @@ Route::prefix('image')->group(function () {
         Route::put('/update/{id}', [ImageDetailController::class, 'update']);  // Cập nhật ảnh
         Route::delete('/delete/{id}', [ImageDetailController::class, 'destroy']); // Xóa ảnh
     });
+});
+
+Route::prefix('order')->group(function () {
+    Route::get('/', [OrderController::class, 'index']);
+    Route::get('/{id}', [OrderController::class, 'show']);
+    // Route::middleware('auth:sanctum')->group(function () {
+    //     Route::post('/create', [OrderController::class, 'store']);
+    //     Route::put('/update/{id}', [OrderController::class, 'update']);
+    //     Route::delete('/delete/{id}', [OrderController::class, 'destroy']);
+    // });
+    Route::post('/create', [OrderController::class, 'store']);
+    Route::put('/update/{id}', [OrderController::class, 'update']);
+    Route::delete('/delete/{id}', [OrderController::class, 'destroy']);
+});
+
+Route::prefix('order-detail')->group(function () {
+    Route::get('/', [OrderDetailController::class, 'index']);
+    Route::get('/{order_id}/{product_id}', [OrderDetailController::class, 'show']);
+    // Route::middleware('auth:sanctum')->group(function () {
+    //     Route::post('/create', [OrderDetailController::class, 'store']);
+    //     Route::put('/update/{order_id}/{product_id}', [OrderDetailController::class, 'update']);
+    //     Route::delete('/delete/{order_id}/{product_id}', [OrderDetailController::class, 'destroy']);
+    // });
+    Route::post('/create', [OrderDetailController::class, 'store']);
+    Route::put('/update/{order_id}/{product_id}', [OrderDetailController::class, 'update']);
+    Route::delete('/delete/{order_id}/{product_id}', [OrderDetailController::class, 'destroy']);
 });
