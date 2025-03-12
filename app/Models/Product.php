@@ -24,4 +24,10 @@ class Product extends Model
          'soldQuantity',
          'productDetail',
      ];
+
+     public function imageDetails()
+     {
+         // Giả sử bảng imageDetail có khóa ngoại là product_id
+         return $this->hasMany(ImageDetail::class, 'product_id');
+     }
 }
