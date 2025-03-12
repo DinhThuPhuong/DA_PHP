@@ -12,7 +12,16 @@ class Order extends Model
     protected $fillable = [
         'totalPrice',
         'user_id',
-        'product_id',
-        'isValidated',
+        'paymentMethod',
+        'note',
+        'shipping_address',
+        'shipping_status',
+        'phoneNumber',
+        'payment_status'
     ];
+
+    public function orderDetails()
+    {
+        return $this->hasMany(OrderDetail::class,'order_id');
+    }
 }
