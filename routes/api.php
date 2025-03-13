@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
@@ -74,7 +75,20 @@ Route::prefix('store')->group(function () {
 });
 
 
+//CartController
+Route::prefix('cart')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [CartController::class, 'viewCart']);
+    Route::post('/add/{product_id}', [CartController::class, 'addToCart']);
+    Route::put('/update/{product_id}', [CartController::class,'updateCart']);
+    Route::delete('/delete/{product_id}', [CartController::class,'removeFromCart']);
+    Route::delete('/clear', [CartController::class,'clearCart']);
+    Route::get('/count', [CartController::class, 'count']);
+});
 
+
+
+
+//AuthController
 Route::prefix('auth')->group(function () {
     // Các route không cần bảo vệ (không yêu cầu token)
     Route::post('/register', [AuthController::class, 'register']);
