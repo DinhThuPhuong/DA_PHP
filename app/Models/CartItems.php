@@ -11,7 +11,8 @@ class CartItems extends Model
     protected $fillable = [
         'user_id', 
         'product_id',
-        'quantity'
+        'quantity',
+        'store_id'
     ];
 
     protected $casts = [
@@ -26,5 +27,10 @@ class CartItems extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
     }
 }
