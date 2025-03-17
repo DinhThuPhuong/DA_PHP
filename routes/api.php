@@ -8,6 +8,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\UserNotificationController;
@@ -73,6 +74,18 @@ Route::prefix('store')->group(function () {
     
 
 });
+
+//OrderController
+Route::prefix('order')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [OrderController::class, 'getAllOrder']);
+    Route::post('/create', [OrderController::class, 'createOrder']);
+    Route::get('/getById/{id}', [OrderController::class,'displayOrder']);
+    Route::delete('/delete/{id}', [OrderController::class,'deleteOrderByUser']);
+    Route::delete('/clear', [OrderController::class,'clearCart']);
+    Route::get('/count', [OrderController::class, 'count']);
+});
+
+
 
 
 //CartController

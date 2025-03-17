@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('lastName')->nullable();
             $table->string('email')->unique();
             $table->string('avatar')->nullable();
-            $table->string('phoneNumber', 10);
+            $table->string('phoneNumber')->nullable()->change();
             $table->foreignId('role_id')
             ->nullable()
             ->constrained('roles')

@@ -13,14 +13,11 @@ return new class extends Migration
     {
         Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');     // Liên kết tới bảng users
-            $table->unsignedBigInteger('product_id');  // Liên kết tới bảng products
-            $table->integer('quantity')->default(1);   // Số lượng sản phẩm
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained('product')->onDelete('cascade');
+            $table->foreignId('store_id')->constrained('store')->onDelete('cascade');
+            $table->integer('quantity')->default(1);
             $table->timestamps();
-
-            // Thiết lập khóa ngoại để đảm bảo dữ liệu liên kết
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('product_id')->references('id')->on('product')->onDelete('cascade');
         });
     }
 
