@@ -22,12 +22,8 @@ return new class extends Migration
             $table->boolean('isValidated')->default(false);
             $table->unsignedInteger('soldQuantity');
             $table->string('productDetail');
-
+            $table->timestamps();
             
-        
-            
-            
-
         });
     }
 

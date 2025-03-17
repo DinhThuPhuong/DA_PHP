@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class OrderDetail extends Model
 {
     //Dat ten table
-    protected $table = "order_detail";
+    protected $table = "order_details";
     //Tat tu dong tang gia tri chyo khoa chinhchinh
     public $incrementing = false;
 
