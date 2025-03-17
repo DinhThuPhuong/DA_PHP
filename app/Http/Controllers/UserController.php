@@ -19,7 +19,7 @@ class UserController extends Controller
         $this->cloudinary = $cloudinary;
     }
 
-    //Tao moi User
+    //Truy van danh sach user (Chuc nang cua Admin)
     public function index()
     {
         
@@ -32,7 +32,7 @@ class UserController extends Controller
 
     }
 
-
+    //Truy van thong tin user dang nhap hien tai (Chuc nang cua User)
     public function getProfile(Request $request)
     {
         if (Auth::check()) {
@@ -50,7 +50,7 @@ class UserController extends Controller
     }
     
 
-    //Nguoi dung chinh sua thong tin Profile
+    //Nguoi dung chinh sua thong tin Profile (Chuc nang cua User)
     public function updateProfile(Request $request)
     {
         Log::info('Request Data:', $request->all());
@@ -70,22 +70,15 @@ class UserController extends Controller
             ], 422);
         }
         
-        // Lấy thông tin user đang đăng nhập
+        // Lay thong tin cua nguoi dung dang dang nhap
         $user = Auth::user();
-        
-        if (!$user) {
-            return response()->json([
-                'status'  => 401,
-                'message' => 'User not authenticated.'
-            ], 401);
-        }
-        
+    
         // Cap nhat thong tin moi neu nguoi dung nhap thong tin moi
         if($request->has('firstName') && trim($request->firstName) !== '') 
             $user->firstName = $request->firstName;
 
-            if($request->has('lastName') && trim($request->lastName) !== '') 
-            $user->lastName = $request->lastName;
+        if($request->has('lastName') && trim($request->lastName) !== '') 
+        $user->lastName = $request->lastName;
 
         if($request->has('phoneNumber') && trim($request->phoneNumber) != '') 
             $user->phoneNumber = $request->phoneNumber;
@@ -129,7 +122,7 @@ class UserController extends Controller
     }
 
     //Nguoi dung xoa tai khoan cua ban than
-    public function deleteUser(Request $request)
+    public function deleteByUser(Request $request)
     {
         $user = Auth::user();
         if (!$user) {
@@ -143,4 +136,15 @@ class UserController extends Controller
             'status'=> 200,
             'message'=> 'Succesfully deleted user']);
     }
+
+    //Xoa tai khoan cua nguoi dung khac (Chuc nang cua Admin)
+    public function deleteUserByAdmin(Request $request, $id)
+    {
+        $user = User::find($id);
+        $user->delete();
+        return response()->json([
+            'status'=> 200,
+            'message'=> 'Succesfully deleted user']);
+    }
+
 }
