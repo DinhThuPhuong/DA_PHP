@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Named middleware only
+        $middleware->alias([
+            'is-admin' => \App\Http\Middleware\CheckAdminAuth::class,
+            'is-store' => \App\Http\Middleware\CheckStoreAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

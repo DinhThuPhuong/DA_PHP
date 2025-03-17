@@ -31,21 +31,23 @@ Route::prefix('category')->group(function () {
 
 //UserController
 Route::prefix('user')->group(function () {
-    // Cac route khong can xac thuc (se chinh sua de danh cho AdminAdmin)
-    Route::get('/', [UserController::class, 'index']);
-    Route::delete('/delete/{id}', [UserController::class, 'delete']);
+    // Cac chuc nang can xac thuc va co quyen admin
+    Route::middleware('auth:sanctum','is-admin')->group(function () {
+        Route::get('/', [UserController::class, 'index']);
+        Route::delete('/deleteByAdmin/{id}', [UserController::class, 'deleteUserByAdmin']);
+    });
 
-    // Cac route danh cho nguoi dung, can xac thuc tai khoan moi co the dung
+    // Cac chuc nang  can xac thuc
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-profile', [UserController::class, 'updateProfile']);
-        Route::delete('/delete', [UserController::class, 'deleteUser']);
+        Route::delete('/delete', [UserController::class, 'deleteByUser']);
         Route::get('/getProfile', [UserController::class, 'getProfile']);
     });
 });
 
 
 // RoleController
-Route::prefix('role')->group(function () {
+Route::prefix('role')->middleware('auth:sanctum','is-admin')->group(function () {
     Route::get('/', [RoleController::class, 'index']);
     Route::post('/create', [RoleController::class, 'create']);
     Route::put('/update/{id}', [RoleController::class, 'update']);
@@ -55,14 +57,20 @@ Route::prefix('role')->group(function () {
 
 //StoreController
 Route::prefix('store')->group(function () {
+    //Cac chuc nang khong can xac thuc
     Route::get('/', [StoreController::class, 'index']);
     Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
-    Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
    
 
-    Route::middleware('auth:sanctum')->group(function () {
+    //Cac chuc nang can xac thuc
+    Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/create', [StoreController::class, 'create']);
+    Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
+    });
+   
+    //Cac chuc nang can xac thuc va co store
+    Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
         Route::get('/myStore', [StoreController::class, 'myStore']);
-        Route::post('/create', [StoreController::class, 'create']);
         Route::post('/update', [StoreController::class, 'update_profile']);
         Route::delete('/delete-store', [StoreController::class,'deleteStore']);
         Route::apiResource('user-notifications', UserNotificationController::class);
@@ -71,8 +79,6 @@ Route::prefix('store')->group(function () {
         Route::apiResource('followers', FollowerController::class);
     });
     
-    
-
 });
 
 //OrderController
@@ -103,11 +109,11 @@ Route::prefix('cart')->middleware('auth:sanctum')->group(function () {
 
 //AuthController
 Route::prefix('auth')->group(function () {
-    // Các route không cần bảo vệ (không yêu cầu token)
+    // Cac chuc nang khong can xac thuc
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
-    // Các route bảo vệ bởi token (sử dụng Sanctum)
+    // Cac chuc nang can xac thuc
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/check-auth', [AuthController::class, 'checkAuthUser']);
