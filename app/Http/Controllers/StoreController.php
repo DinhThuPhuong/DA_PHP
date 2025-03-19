@@ -55,22 +55,8 @@ class StoreController extends Controller
 
     //Nguoi dung tao store
     public function create(Request $request){
-        //Kiem tra su ton tai cua user dang ki mo store
         $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not authenticated.',
-            ], 404);
-        }
-
-        // Kiem tra xem nguoi dung da co store chua
-        $store1 = Store::where('ownId', $user->id)->first();
-        if ($store1) {
-            return response()->json([
-                'message' => "User with ID {$user->id} has already registered a store."
-            ], 500);
-        }
-
+        
         //kiem tra du lieu dau vao, ten store khong cho phep trung 
         $validator = Validator::make($request->all(), [
             'storeName'   => 'required|max:255|unique:store,storeName',

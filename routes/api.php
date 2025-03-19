@@ -91,10 +91,10 @@ Route::prefix('store')->group(function () {
     Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
    
 
-    //Cac chuc nang can xac thuc
-    Route::middleware(['auth:sanctum'])->group(function () {
+    //Cac chuc nang can xac thuc nguoi dung chua co store
+    Route::middleware(['auth:sanctum', 'is-user'])->group(function () {
     Route::post('/create', [StoreController::class, 'create']);
-    Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
+   
     });
    
     //Cac chuc nang can xac thuc va co store
@@ -103,18 +103,20 @@ Route::prefix('store')->group(function () {
         Route::get('/getOrderList', [StoreController::class, 'getOrderList']);
         Route::get('/myStore', [StoreController::class, 'myStore']);
         Route::post('/update', [StoreController::class, 'update_profile']);
+        Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
         Route::delete('/delete-store', [StoreController::class,'deleteStore']);
         Route::apiResource('user-notifications', UserNotificationController::class);
         Route::apiResource('store-notifications', StoreNotificationController::class);
         Route::apiResource('messages', MessageController::class);
         Route::apiResource('followers', FollowerController::class);
+
        
     });
     
 });
 
-//OrderController
-Route::prefix('order')->middleware('auth:sanctum')->group(function () {
+//OrderController (Chuc nang can xac thuc va danh cho nguoi dung chua co store)
+Route::prefix('order')->middleware('auth:sanctum', 'is-user')->group(function () {
     Route::get('/', [OrderController::class, 'getAllOrder']);
     Route::post('/create', [OrderController::class, 'createOrderFromCart']);
     Route::post('/createDirectOrder', [OrderController::class, 'createDirectOrder']);
@@ -126,8 +128,8 @@ Route::prefix('order')->middleware('auth:sanctum')->group(function () {
 
 
 
-//CartController
-Route::prefix('cart')->middleware('auth:sanctum')->group(function () {
+//CartController (Chuc nang can xac thuc va danh cho nguoi dung chua co store)
+Route::prefix('cart')->middleware('auth:sanctum', 'is-user')->group(function () {
     Route::get('/', [CartController::class, 'viewCart']);
     Route::post('/add/{product_id}', [CartController::class, 'addToCart']);
     Route::put('/update/{product_id}', [CartController::class,'updateCart']);
