@@ -6,6 +6,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\OrderController;
@@ -23,9 +24,14 @@ Route::middleware('auth:sanctum')->get('/user/profile', function( Request $reque
 //CategoryController
 Route::prefix('category')->group(function () {
     Route::get('/', [CategoryController::class, 'index']);
-    Route::post('/create', [CategoryController::class, 'create']);
-    Route::put('/update/{id}', [CategoryController::class, 'update']);
-    Route::delete('/delete/{id}', [CategoryController::class,'delete']);
+    Route::middleware('auth:sanctum','is-admin')->group(function () {
+        Route::post('/create', [CategoryController::class, 'create']);
+        Route::put('/update/{id}', [CategoryController::class, 'update']);
+        Route::delete('/delete/{id}', [CategoryController::class,'delete']);
+        
+    });
+
+    
   
 });
 
@@ -44,6 +50,29 @@ Route::prefix('user')->group(function () {
         Route::get('/getProfile', [UserController::class, 'getProfile']);
     });
 });
+
+//ProductController
+Route::prefix('product')->group(function () {
+    //Cac chuc nang khong can xac thuc
+    Route::get('/', [ProductController::class, 'getAllProduct']);
+    Route::get('/search/{keyword}', [ProductController::class, 'searchProduct']);
+    Route::get('/display/{id}', [ProductController::class, 'display']);
+
+    // Cac chuc nang can xac thuc va co quyen store
+    Route::middleware('auth:sanctum','is-store')->group(function () {
+      
+        Route::post('/createProduct', [ProductController::class, 'createProduct']);
+        Route::put('/update/{id}', [ProductController::class, 'updateProduct']);
+        Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
+       
+    });
+
+    // Cac chuc nang  can xac thuc
+    // Route::middleware('auth:sanctum')->group(function () {
+        
+    
+});
+
 
 
 // RoleController
@@ -70,6 +99,8 @@ Route::prefix('store')->group(function () {
    
     //Cac chuc nang can xac thuc va co store
     Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
+        Route::get('/getProductsList', [StoreController::class, 'getProductsList']);
+        Route::get('/getOrderList', [StoreController::class, 'getOrderList']);
         Route::get('/myStore', [StoreController::class, 'myStore']);
         Route::post('/update', [StoreController::class, 'update_profile']);
         Route::delete('/delete-store', [StoreController::class,'deleteStore']);
@@ -77,6 +108,7 @@ Route::prefix('store')->group(function () {
         Route::apiResource('store-notifications', StoreNotificationController::class);
         Route::apiResource('messages', MessageController::class);
         Route::apiResource('followers', FollowerController::class);
+       
     });
     
 });
@@ -84,11 +116,11 @@ Route::prefix('store')->group(function () {
 //OrderController
 Route::prefix('order')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [OrderController::class, 'getAllOrder']);
-    Route::post('/create', [OrderController::class, 'createOrder']);
+    Route::post('/create', [OrderController::class, 'createOrderFromCart']);
+    Route::post('/createDirectOrder', [OrderController::class, 'createDirectOrder']);
     Route::get('/getById/{id}', [OrderController::class,'displayOrder']);
-    Route::delete('/delete/{id}', [OrderController::class,'deleteOrderByUser']);
-    Route::delete('/clear', [OrderController::class,'clearCart']);
-    Route::get('/count', [OrderController::class, 'count']);
+    Route::put('/cancel/{id}', [OrderController::class,'cancelOrderByUser']);
+
 });
 
 

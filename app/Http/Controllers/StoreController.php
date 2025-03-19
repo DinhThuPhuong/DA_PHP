@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Store;
+use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +19,25 @@ class StoreController extends Controller
     public function __construct(CloudinaryAdapter $cloudinary)
     {
         $this->cloudinary = $cloudinary;
+    }
+
+    //Hien thi danh sach tat ca san pham cua store
+    public function getProductsList (Request $request)
+    {
+
+        $products = Product::where("store_id", $request->store->id)->get();
+        return response()->json($products, 200);
+    }
+
+    //Hien thi danh sach tat ca don hang cua store
+    public function getOrderList(Request $request)
+    {
+        // Truy van danh don hang cung voi chi tiet don
+        $orders = Order::with('orderDetails') 
+            ->where("store_id", $request->store->id)
+            ->get();
+
+        return response()->json($orders, 200);
     }
 
     //Hien thi danh sach tat ca store 
@@ -67,7 +88,7 @@ class StoreController extends Controller
         }
 
         try {
-            // Upload ảnh lên Cloudinary
+            // Upload anh len Cloudinary
             $uploadResult = $this->cloudinary->upload(
                 $request->file('avatar'),
                 [
@@ -148,7 +169,7 @@ class StoreController extends Controller
             $store1->description = $request->description;
         }
 
-        // Xử lý upload ảnh mới nếu có
+        // Xu ly anh moi neu co
         if ($request->hasFile('avatar')) {
             try {
                 $uploadResult = $this->cloudinary->upload(
@@ -232,8 +253,7 @@ class StoreController extends Controller
             ], 404);
         }
         
-        // Kiểm tra quyền sở hữu: chỉ cho phép chủ cửa hàng được xóa
-        
+        // Kiem tra quyen so huu: chi cho phep chu cua hang duoc xoa
         $store->delete();
         
         return response()->json([
@@ -266,6 +286,24 @@ class StoreController extends Controller
             ]);
         
     }
+
+    // //Chu so huu truy van danh sach cac don hang duoc khach hang thuc hien mua
+    // //tu store cua minh
+    // public function getStoreOrders()
+    // {
+    //     //Truy van thong tin cua chu so huu store
+    //     $user = Auth::user();
+    //     $store = Store::where('ownId', $user->id)->firstOrFail;
+
+    //     //Truy van danh sach tat ca cac don hang
+    //     $order = Order::where('store_id', $store->id)
+    //                     ->with('orderDetails')
+    //                     ->get();
+
+    //     return response()->json($order,200);
+
+
+    // }
 }
      
     
