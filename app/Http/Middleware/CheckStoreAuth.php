@@ -37,6 +37,8 @@ class CheckStoreAuth
                 'message' => 'Unauthorized. You need to register a store first.'
             ], 403);
         }
+        // them thong tin store vao request
+        $request->merge(['store' => $store]);
 
         //Neu co store thi cho phep truy cap
         return $next($request);
