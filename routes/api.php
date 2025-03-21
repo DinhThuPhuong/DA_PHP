@@ -16,29 +16,23 @@ use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\StoreNotificationController;
 
 
-Route::middleware('auth:sanctum')->get('/user/profile', function( Request $request)
-{
+Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
     return $request->user();
 });
 
 //CategoryController
 Route::prefix('category')->group(function () {
     Route::get('/', [CategoryController::class, 'index']);
-    Route::middleware('auth:sanctum','is-admin')->group(function () {
-        Route::post('/create', [CategoryController::class, 'create']);
-        Route::put('/update/{id}', [CategoryController::class, 'update']);
-        Route::delete('/delete/{id}', [CategoryController::class,'delete']);
-        
-    });
-
-    
-  
+    Route::post('/create', [CategoryController::class, 'create']);
+    Route::put('/update/{id}', [CategoryController::class, 'update']);
+    Route::delete('/delete/{id}', [CategoryController::class, 'delete']);
+    Route::middleware('auth:sanctum', 'is-admin')->group(function () {});
 });
 
 //UserController
 Route::prefix('user')->group(function () {
     // Cac chuc nang can xac thuc va co quyen admin
-    Route::middleware('auth:sanctum','is-admin')->group(function () {
+    Route::middleware('auth:sanctum', 'is-admin')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::delete('/deleteByAdmin/{id}', [UserController::class, 'deleteUserByAdmin']);
     });
@@ -59,29 +53,32 @@ Route::prefix('product')->group(function () {
     Route::get('/display/{id}', [ProductController::class, 'display']);
 
     // Cac chuc nang can xac thuc va co quyen store
-    Route::middleware('auth:sanctum','is-store')->group(function () {
-      
-        Route::post('/createProduct', [ProductController::class, 'createProduct']);
-        Route::put('/update/{id}', [ProductController::class, 'updateProduct']);
-        Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
-       
-    });
+    // Route::middleware('auth:sanctum','is-store')->group(function () {
+
+    //     Route::post('/createProduct', [ProductController::class, 'createProduct']);
+    //     Route::put('/update/{id}', [ProductController::class, 'updateProduct']);
+    //     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
+
+    // });
+    Route::post('/create', [ProductController::class, 'createProduct']); // Tạo sản phẩm mới
+    Route::put('/update/{id}', [ProductController::class, 'update']); // Cập nhật sản phẩm
+    Route::delete('/delete/{id}', [ProductController::class, 'destroy']); // Xóa sản phẩm
+    Route::middleware('auth:sanctum', 'is-admin')->group(function () {});
 
     // Cac chuc nang  can xac thuc
     // Route::middleware('auth:sanctum')->group(function () {
-        
-    
+
+
 });
 
 
 
 // RoleController
-Route::prefix('role')->middleware('auth:sanctum','is-admin')->group(function () {
+Route::prefix('role')->middleware('auth:sanctum', 'is-admin')->group(function () {
     Route::get('/', [RoleController::class, 'index']);
     Route::post('/create', [RoleController::class, 'create']);
     Route::put('/update/{id}', [RoleController::class, 'update']);
-    Route::delete('/delete/{id}', [RoleController::class,'delete']);
-  
+    Route::delete('/delete/{id}', [RoleController::class, 'delete']);
 });
 
 //StoreController
@@ -89,14 +86,13 @@ Route::prefix('store')->group(function () {
     //Cac chuc nang khong can xac thuc
     Route::get('/', [StoreController::class, 'index']);
     Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
-   
+
 
     //Cac chuc nang can xac thuc nguoi dung chua co store
     Route::middleware(['auth:sanctum', 'is-user'])->group(function () {
-    Route::post('/create', [StoreController::class, 'create']);
-   
+        Route::post('/create', [StoreController::class, 'create']);
     });
-   
+
     //Cac chuc nang can xac thuc va co store
     Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
         Route::get('/getProductsList', [StoreController::class, 'getProductsList']);
@@ -104,15 +100,12 @@ Route::prefix('store')->group(function () {
         Route::get('/myStore', [StoreController::class, 'myStore']);
         Route::post('/update', [StoreController::class, 'update_profile']);
         Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
-        Route::delete('/delete-store', [StoreController::class,'deleteStore']);
+        Route::delete('/delete-store', [StoreController::class, 'deleteStore']);
         Route::apiResource('user-notifications', UserNotificationController::class);
         Route::apiResource('store-notifications', StoreNotificationController::class);
         Route::apiResource('messages', MessageController::class);
         Route::apiResource('followers', FollowerController::class);
-
-       
     });
-    
 });
 
 //OrderController (Chuc nang can xac thuc va danh cho nguoi dung chua co store)
@@ -120,9 +113,8 @@ Route::prefix('order')->middleware('auth:sanctum', 'is-user')->group(function ()
     Route::get('/', [OrderController::class, 'getAllOrder']);
     Route::post('/create', [OrderController::class, 'createOrderFromCart']);
     Route::post('/createDirectOrder', [OrderController::class, 'createDirectOrder']);
-    Route::get('/getById/{id}', [OrderController::class,'displayOrder']);
-    Route::put('/cancel/{id}', [OrderController::class,'cancelOrderByUser']);
-
+    Route::get('/getById/{id}', [OrderController::class, 'displayOrder']);
+    Route::put('/cancel/{id}', [OrderController::class, 'cancelOrderByUser']);
 });
 
 
@@ -132,9 +124,9 @@ Route::prefix('order')->middleware('auth:sanctum', 'is-user')->group(function ()
 Route::prefix('cart')->middleware('auth:sanctum', 'is-user')->group(function () {
     Route::get('/', [CartController::class, 'viewCart']);
     Route::post('/add/{product_id}', [CartController::class, 'addToCart']);
-    Route::put('/update/{product_id}', [CartController::class,'updateCart']);
-    Route::delete('/delete/{product_id}', [CartController::class,'removeFromCart']);
-    Route::delete('/clear', [CartController::class,'clearCart']);
+    Route::put('/update/{product_id}', [CartController::class, 'updateCart']);
+    Route::delete('/delete/{product_id}', [CartController::class, 'removeFromCart']);
+    Route::delete('/clear', [CartController::class, 'clearCart']);
     Route::get('/count', [CartController::class, 'count']);
 });
 
