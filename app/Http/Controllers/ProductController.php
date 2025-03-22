@@ -75,9 +75,6 @@ class ProductController extends Controller
     public function createProduct(Request $request)
     {
         
-
-        
-
         $store = Store::where("ownId", Auth::user()->id)->first();
         //Neu nguoi dung chua dang ki store
         // if(!$store)
