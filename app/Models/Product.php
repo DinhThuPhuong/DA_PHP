@@ -19,7 +19,7 @@ class Product extends Model
          'remainQuantity',
          'price',
          'store_id',
-         'thumnail',
+         'thumbnail',
          'isValidated',
          'soldQuantity',
          'productDetail',
