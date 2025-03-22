@@ -21,7 +21,7 @@ class FollowerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'store_id' => 'required|exists:stores,id', // Đảm bảo store_id tồn tại
+            'store_id' => 'required|exists:store,id', // Đảm bảo store_id tồn tại
         ]);
 
         $userId = Auth::id();
