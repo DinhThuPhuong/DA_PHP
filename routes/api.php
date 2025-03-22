@@ -124,13 +124,13 @@ Route::prefix('store')->group(function () {
 
 //UserNotificationController (Can xac thuc de nhan va tao thong bao, can quyen admin de xoa thong bao)
 Route::prefix('usernotifications')->group(function(){
-    Route::middleware(['auth-sanctum','is-user'])->group(function(){
+    Route::middleware(['auth:sanctum','is-user'])->group(function(){
         Route::get('/get', [UserNotificationController::class, 'index']);  // Lấy danh sách thông báo
         Route::get('/detail/{id}', [UserNotificationController::class, 'show']); // Xem chi tiết thông báo
         Route::post('/create', [UserNotificationController::class, 'store']); // Tạo thông báo mới // Store sẽ tạo thông báo cho user
     });
    
-    Route::middleware((['auth-sanctum','is-admin']))->group(function(){
+    Route::middleware((['auth:sanctum','is-admin']))->group(function(){
         Route::put('/update/{id}', [UserNotificationController::class, 'update']); // Cập nhật thông báo
         Route::delete('/delete/{id}', [UserNotificationController::class, 'destroy']); // Xóa thông báo
     });
@@ -139,12 +139,12 @@ Route::prefix('usernotifications')->group(function(){
 });
 //StoreNotificationController (Can xac thuc de nhan thong bao)
 Route::prefix('storenotification')->group(function(){
-    Route::middleware(['auth-sanctum','is-store'])->group(function(){
+    Route::middleware(['auth:sanctum','is-store'])->group(function(){
         Route::get('/get',[StoreNotificationController::class , 'index']);
         Route::get('/detail/{id}',[StoreNotificationController::class , 'show']);
         Route::post('/create', [StoreNotificationController::class,'store']);
     });
-    Route::middleware((['auth-sanctum','is-admin']))->group(function(){
+    Route::middleware((['auth:sanctum','is-admin']))->group(function(){
         Route::put('/update/{id}', [StoreNotificationController::class, 'update']); // Cập nhật thông báo
         Route::delete('/delete/{id}', [StoreNotificationController::class, 'destroy']); // Xóa thông báo
     });
@@ -152,7 +152,7 @@ Route::prefix('storenotification')->group(function(){
 
 //FollowerController 
 Route::prefix('followers')->group(function(){
-    Route::middleware(['auth-sanctum','is-user'])->group(function(){
+    Route::middleware(['auth:sanctum', 'is-user'])->group(function(){
          // Lấy danh sách các store mà user đang theo dõi
         Route::get('/get', [FollowerController::class, 'index']);
 
@@ -167,7 +167,7 @@ Route::prefix('followers')->group(function(){
 //MessageController
 Route::prefix(('message'))->group(function(){
     // Cho User
-    Route::middleware(['auth-sanctum','is-user'])->group(function(){
+    Route::middleware(['auth:sanctum','is-user'])->group(function(){
         Route::get('/getUserMS' , [MessageController::class,'show']);
         Route::post('/UserCreate' , [MessageController::class,'store']);
         Route::put('/userUpdate/{id}', [MessageController::class , 'update']);
@@ -175,7 +175,7 @@ Route::prefix(('message'))->group(function(){
     });
 
     //Cho Store
-    Route::middleware(['auth-sanctum','is-store'])->group(function(){
+    Route::middleware(['auth:sanctum','is-store'])->group(function(){
         Route::get('/getStoreMS' , [MessageController::class,'show']);
         Route::post('/StoreCreate' , [MessageController::class,'store']);
         Route::put('/StoreUpdate/{id}', [MessageController::class , 'update']);
