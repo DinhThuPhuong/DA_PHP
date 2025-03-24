@@ -18,7 +18,7 @@ class CheckUserAuth
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Kiem tra trang thai dang nhap
+        // Kiểm tra trạng thái đăng nhập
         if (!auth()->check()) {
             return response()->json([
                 'status' => 401,
@@ -27,11 +27,18 @@ class CheckUserAuth
         }
 
         $user = auth()->user();
+         // Kiem tra role cua nguoi dung
+         if ($user->role_id == 1) {  //role = 1
+            return response()->json([
+                'status' => 403,
+                'message' => 'Unauthorized. You do not have permission to access this resource.'
+            ], 403);
+        }
         
-        // Kiem tra nguoi dung co store hay khong
+        // Kiem tra nguoi dung co store chua
         $store = Store::where('ownId', $user->id)->first();
         
-        // Neu nguoi dung da co store, tra ve thong bao loi
+        // Neu da co store thi thong bao voi loi 403
         if ($store) {
             return response()->json([
                 'status' => 403,
@@ -39,7 +46,9 @@ class CheckUserAuth
             ], 403);
         }
 
-        // Neu nguoi dung chua co store, cho phep truy cap
+       
+
+        
         return $next($request);
     }
 }
