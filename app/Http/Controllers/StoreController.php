@@ -273,23 +273,26 @@ class StoreController extends Controller
         
     }
 
-    // //Chu so huu truy van danh sach cac don hang duoc khach hang thuc hien mua
-    // //tu store cua minh
-    // public function getStoreOrders()
-    // {
-    //     //Truy van thong tin cua chu so huu store
-    //     $user = Auth::user();
-    //     $store = Store::where('ownId', $user->id)->firstOrFail;
+    //Tim kiem store theo ten(Chuc nang cua nguoi dung)
 
-    //     //Truy van danh sach tat ca cac don hang
-    //     $order = Order::where('store_id', $store->id)
-    //                     ->with('orderDetails')
-    //                     ->get();
+    public function findStoreByStoreName($storeName)
+    {
+        // Tim kiem store theo ten
+        $stores = Store::where('storeName', 'LIKE', '%' . $storeName . '%')->get();
 
-    //     return response()->json($order,200);
+        if ($stores->isEmpty()) {
+            return response()->json([
+                "status" => 404,
+                "message" => "No stores found with name containing '$storeName'"
+            ], 404);
+        }
 
-
-    // }
+        return response()->json([
+            "status" => 200,
+            "stores" => $stores   
+        ], 200);
+    }
+    
 }
      
     

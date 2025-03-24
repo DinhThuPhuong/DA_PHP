@@ -291,6 +291,29 @@ class OrderController extends Controller
     }
 }
 
+public function getOrdersByStatus($status)
+{
+    // Truy van thong tin nguoi dung dang dang nhap
+    $user = Auth::user();
+
+    // Kiem tra trang thai hop le
+    $validStatuses = ['Waiting for Pickup', 'In Delivery', 'Delivered', 'Canceled'];
+    if (!in_array($status, $validStatuses)) {
+        return response()->json([
+            'status' => 400,
+            'message' => 'Invalid order status'
+        ], 400);
+    }
+
+    // Truy van don hang theo trang thai
+    $orders = Order::where('user_id', $user->id)
+                    ->where('shipping_status', $status)
+                    ->with(['orderDetails.product']) // Lay chi tiet don hang va san pham
+                    ->get();
+
+    return response()->json($orders, 200);
+}
+
 
 
 
