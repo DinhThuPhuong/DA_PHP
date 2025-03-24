@@ -88,6 +88,7 @@ Route::prefix('role')->middleware('auth:sanctum','is-admin')->group(function () 
 Route::prefix('store')->group(function () {
     //Cac chuc nang khong can xac thuc
     Route::get('/', [StoreController::class, 'index']);
+    Route::get('/findStoreByStoreName/{storeName}', [StoreController::class, 'findStoreByStoreName']);
     Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
    
 
@@ -118,6 +119,7 @@ Route::prefix('store')->group(function () {
 //OrderController (Chuc nang can xac thuc va danh cho nguoi dung chua co store)
 Route::prefix('order')->middleware('auth:sanctum', 'is-user')->group(function () {
     Route::get('/', [OrderController::class, 'getAllOrder']);
+    Route::get('/getOrdersByStatus/{status}', [OrderController::class, 'getOrdersByStatus']);
     Route::post('/create', [OrderController::class, 'createOrderFromCart']);
     Route::post('/createDirectOrder', [OrderController::class, 'createDirectOrder']);
     Route::get('/getById/{id}', [OrderController::class,'displayOrder']);
