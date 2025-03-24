@@ -292,6 +292,89 @@ class StoreController extends Controller
             "stores" => $stores   
         ], 200);
     }
+
+    //Cap nhat trang thai dang giao hang cho don hang (Chuc nang cua store)
+    public function updateOrderStatus(Request $request, $order_id)
+    {
+        //Kiem tra don hang co ton tai khong
+        $order = Order::find($order_id);
+        if (!$order) {
+            return response()->json([
+                "status" => 404,
+                "message" => "Order not found"
+            ], 404);
+        }
+
+        //Kiem tra xem don hang co thuoc store hien tai khong
+        if($order->store_id != $request->store->id){
+            return response()->json([
+                "status" => 403,
+                "message" => "Unauthorized to update this order"
+            ], 403);
+        }
+
+        //Kiem tra trang thai hien tai cua don hang
+        if($order->shipping_status != 'Waiting for Pickup'){
+            return response()->json([
+                "status" => 400,
+              'message' => "Order with id = $order_id cannot be updated"
+            ], 400);
+        }
+
+        //Cap nhat trang thai don hang
+        $order->shipping_status = "In Delivery";
+        $order->save();
+
+        return response()->json([
+            "status" => 200,    
+            "message" => "Order status updated to In Delivery"
+        ], 200);
+    }
+
+    //Cap nhat trang thai don hang thanh "Canceled" (Chuc nang cua store)
+public function cancelOrderByStore(Request $request, $order_id)
+{
+   
+    // Truy van don hang theo order_id
+    $order = Order::find($order_id);
+    if (!$order) {
+        return response()->json([
+            'status' => 404,
+            'message' => "Order with id = $order_id not found"
+        ], 404);
+    }
+
+    // Kiem tra xem nguoi dung co phai la chu store cua don hang khong
+    if ($order->store_id != $request->store->id) {
+        return response()->json([
+            'status' => 403,
+            'message' => 'User is not authorized to cancel this order'
+        ], 403);
+    }
+
+    // Kiem tra trang thai hien tai cua don hang
+    if ($order->shipping_status != 'Waiting for Pickup') {
+        return response()->json([
+            'status' => 400,
+            'message' => "Order with id = $order_id cannot be canceled"
+        ], 400);
+    }
+
+    // Cap nhat trang thai don hang thanh "Canceled"
+    $order->shipping_status = 'Canceled';
+    $order->save();
+
+    return response()->json([
+        'status' => 200,
+        'message' => "Order with id = $order_id has been canceled successfully"
+    ], 200);
+}
+
+
+
+        
+
+    
     
 }
      
