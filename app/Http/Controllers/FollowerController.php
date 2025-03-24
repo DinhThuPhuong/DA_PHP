@@ -21,7 +21,7 @@ class FollowerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'store_id' => 'required|exists:stores,id', // Đảm bảo store_id tồn tại
+            'store_id' => 'required|exists:store,id', // Đảm bảo store_id tồn tại
         ]);
 
         $userId = Auth::id();
@@ -61,4 +61,16 @@ class FollowerController extends Controller
         $follower->delete();
         return response()->json(['message' => 'Unfollowed successfully']);
     }
+
+    public function getStoreFollowers()
+{
+    $storeId = Auth::id(); // Giả sử store đăng nhập bằng token
+
+    // Lấy danh sách user theo dõi store
+    $followers = Follower::where('store_id', $storeId)
+        ->with('user:id,name,email') // Lấy thêm thông tin user
+        ->get();
+
+    return response()->json($followers);
+}
 }
