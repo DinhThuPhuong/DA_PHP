@@ -102,12 +102,14 @@ Route::prefix('store')->group(function () {
    
     //Cac chuc nang can xac thuc va co store
     Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
+        Route::put('/updateOrderStatus/{order_id}', [StoreController::class, 'updateOrderStatus']);
         Route::get('/getProductsList', [StoreController::class, 'getProductsList']);
         Route::get('/getOrderList', [StoreController::class, 'getOrderList']);
         Route::get('/myStore', [StoreController::class, 'myStore']);
         Route::post('/update', [StoreController::class, 'update_profile']);
         Route::get('/findStoreByOwnId/{user_id}', [StoreController::class, 'findStoreByOwnId']);
         Route::delete('/delete-store', [StoreController::class,'deleteStore']);
+        Route::put('/cancelOrder/{order_id}', [StoreController::class, 'cancelOrderByStore']);
         
         // Tạo thông báo mới tới user
         Route::post('/notifications', [UserNotificationController::class, 'store']);
