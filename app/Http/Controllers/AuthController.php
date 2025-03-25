@@ -19,14 +19,14 @@ class AuthController extends Controller
     {
         // Validate dữ liệu đầu vào
         Log::info('UserController thực thi chức năng đăng ký user');
-        
+
         $validator = Validator::make($request->all(), [
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
             // 'name' => 'required',
             // 'phoneNumber' =>'required'
         ]);
-        
+
         if ($validator->fails()) {
             $data = [
                 'status'  => 422,
@@ -41,15 +41,15 @@ class AuthController extends Controller
             // $user->phoneNumber = $request->phoneNumber;
             // Bam mat khau su dungdung Bcrypt
             $user->password = Hash::make($request->password);
-            
+
             $user->save();
-           
+
             $data = [
                 'status'  => 200,
                 'message' => 'Successfully created new user',
                 'user'    => $user,
             ];
-            
+
             return response()->json($data, 200);
         }
     }
@@ -64,14 +64,14 @@ class AuthController extends Controller
             'email'    => 'required|email',
             'password' => 'required|min:6',
         ]);
-    
+
         if (!Auth::attempt($credentials)) {
             return response()->json([
                 'status'  => 401,
                 'message' => 'Invalid credentials'
             ], 401);
         }
-    
+
         $user = Auth::user();
         if (!$user) {
             return response()->json([
@@ -88,20 +88,20 @@ class AuthController extends Controller
             'token'   => $token,
         ], 200);
     }
-    
+
     /**
      * Đăng xuất tài khoản.
      */
     public function logout(Request $request)
-{
-    // Xoá token hiện tại của người dùng
-    $request->user()->currentAccessToken()->delete();
+    {
+        // Xoá token hiện tại của người dùng
+        $request->user()->currentAccessToken()->delete();
 
-    return response()->json([
-        'status'  => 200,
-        'message' => 'Logout successful',
-    ], 200);
-}
+        return response()->json([
+            'status'  => 200,
+            'message' => 'Logout successful',
+        ], 200);
+    }
 
 
     /**
