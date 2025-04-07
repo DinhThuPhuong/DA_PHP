@@ -10,7 +10,8 @@ use App\Models\Product;
 use App\Models\OrderDetail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 
 class OrderController extends Controller
@@ -143,13 +144,22 @@ class OrderController extends Controller
                     $price = $this->createOrderDetailForProduct($item, $order);
                     $totalPriceForStore += $price;
                 }
-
+                Log::info("Total price 1: " . $totalPriceForStore);
                 // Cap nhat tong gia tri cua don hang
                 $order->totalPrice = $totalPriceForStore;
+                Log::info("Total price 2: " . $order->totalPrice);
+                
+
                 $order->save();
 
                 // Xoa san pham ra khoi gio hang
                 $this->deleteCartItems($user->id, $items);
+            }
+
+            if ($request->paymentMethod === 'BANKING') {
+                DB::commit(); // commit trước khi redirect
+                $redirectUrl = $this->redirectToVnpay($order);
+                return redirect($redirectUrl);
             }
 
             DB::commit();
@@ -211,7 +221,14 @@ class OrderController extends Controller
 
             // Cap nhat tong gia tri cua don hang
             $order->totalPrice = $totalPrice;
+            Log::info("Total price 1: " . $totalPrice);
+            Log::info("Total price 2: " . $order->totalPrice);
             $order->save();
+            if ($request->paymentMethod === 'BANKING') {
+                DB::commit(); // commit trước khi redirect
+                $redirectUrl = $this->redirectToVnpay($order);
+                return redirect($redirectUrl);
+            }
 
             DB::commit();
             return response()->json([
@@ -228,6 +245,141 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    
+    // VNPAY_TMNCODE=4NILMY5M
+    // VNPAY_HASHSECRET=WKCLSZQR1ZVS4I6W1BW4XBT45I01NZEJ
+    // VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    // VNP_RETURN_URL=http://localhost:8000/api/vnpay/return
+
+    private function redirectToVnpay($order)
+    {
+        $vnp_TmnCode = "4NILMY5M";
+        $vnp_HashSecret = "WKCLSZQR1ZVS4I6W1BW4XBT45I01NZEJ";
+        //$vnp_Url = env('VNP_URL');
+        $vnp_Returnurl = "http://localhost:8000/api/vnpay/return";
+
+        $vnp_TxnRef = $order->id; // Mã giao dịch (duy nhất)
+        $vnp_OrderInfo = 'Thanh toan don hang #' . $order->id;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = $order->totalPrice * 100; // VNPay yêu cầu nhân 100
+        $vnp_Locale = 'vn';
+        $vnp_IpAddr = request()->ip();
+
+        // Nếu bạn muốn gửi kèm bank_code từ frontend, truyền request vào hàm này
+        $vnp_BankCode = request()->input('bank_code', ''); // Lấy bank_code nếu có
+
+        $inputData = [
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $vnp_TxnRef
+        ];
+
+        if (!empty($vnp_BankCode)) {
+            $inputData['vnp_BankCode'] = $vnp_BankCode;
+        }
+
+        // Sắp xếp dữ liệu để tạo hash
+       
+        ksort($inputData);
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
+        }
+        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        $vnp_Url .= "?" . $query;
+        
+        $vnp_SecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+        $vnp_Url .= 'vnp_SecureHash=' . $vnp_SecureHash;
+        $secureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+        Log::info("Generated Secure Hash: " . $secureHash);
+        Log::info("VNPay Received Secure Hash: " . $vnp_SecureHash);
+        Log::info("VNPay URL: " . $vnp_Url);
+        return $vnp_Url;
+    }
+
+
+    
+
+    //Handle VNPay response
+    public function handleVnpayReturn(Request $request)
+    {
+        $vnp_HashSecret = "WKCLSZQR1ZVS4I6W1BW4XBT45I01NZEJ"; 
+        $inputData = $request->all();
+    
+        if (!isset($inputData['vnp_SecureHash'])) {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Missing secure hash'
+            ]);
+        }
+    
+        $vnp_SecureHash = $inputData['vnp_SecureHash'];
+        unset($inputData['vnp_SecureHash'], $inputData['vnp_SecureHashType']);
+    
+        ksort($inputData);
+    
+        $hashDataArr = [];
+        foreach ($inputData as $key => $value) {
+            $hashDataArr[] = $key . '=' . urlencode($value); // urlencode từng giá trị!
+        }
+        $hashData = implode('&', $hashDataArr);
+    
+        Log::info("VNPay Hash Data: " . $hashData);
+    
+        $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+        Log::info("Generated Secure Hash: " . $secureHash);
+        Log::info("VNPay Received Secure Hash: " . $vnp_SecureHash);
+        $orderId = $request->vnp_TxnRef;
+        $order = Order::find($orderId);
+        if (hash_equals($secureHash, $vnp_SecureHash)) {
+            
+    
+            if ($order && $request->vnp_ResponseCode == '00') {
+                $order->payment_status = 'Paid';
+                $order->save();
+    
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Payment successful',
+                    'order_id' => $orderId
+                ]);
+            } else {
+                $order->payment_status = 'Failed';
+                $order->save();
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Payment failed or order not found'
+                ]);
+            }
+        } else {
+            $order->payment_status = 'Failed';
+            $order->save();
+            return response()->json([
+                'status' => 400,
+                'message' => 'Invalid signature from VNPay'
+            ]);
+        }
+    }
+    
+    
 
 
     //Nguoi dung thuc hien huy don hang theo id 
@@ -364,11 +516,13 @@ public function getOrdersByStatus($status)
          $order->shipping_address = $request->shipping_address;
          $order->note = $request->note;
          $order->paymentMethod = $request->paymentMethod;
-         $order->payment_status = $request->paymentMethod === 'COD' ? 'Pending' : 'Paid';
+         $order->payment_status = 'Pending';
+         //$order->payment_status = '$request->paymentMethod === 'COD' ? 'Pending' : 'Paid'';
          $order->shipping_status = 'Waiting for Pickup';
          $order->phoneNumber = $request->phoneNumber;
          $order->totalPrice = 0;  // Sẽ tính sau
          $order->store_id = $storeId;
+         $order->created_at = now();
          $order->save();
  
          return $order;

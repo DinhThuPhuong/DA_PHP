@@ -15,6 +15,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\StoreNotificationController;
 use App\Models\StoreNotification;
+use App\Http\Controllers\VnPayController;
 
 Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
     return $request->user();
@@ -216,3 +217,12 @@ Route::prefix('auth')->group(function () {
         Route::get('/check-auth', [AuthController::class, 'checkAuthUser']);
     });
 });
+
+//Test VNPay
+//Test
+
+// Route::post('/vnpay-payment', [VnPayController::class, 'createPayment']);    
+// Route::get('/vnpay-return', [VnPayController::class, 'vnpayReturn']);
+
+//VNPay return url
+Route::get('/vnpay/return', [OrderController::class, 'handleVnpayReturn']);
