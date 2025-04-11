@@ -28,6 +28,7 @@ class ProductController extends Controller
     public function getAllProduct()
     {
         $products = Product::all()->toArray();
+        $products = Product::with('category')->get();
 
         $data = [
             'status' => 200,

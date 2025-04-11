@@ -30,4 +30,8 @@ class Product extends Model
          // Giả sử bảng imageDetail có khóa ngoại là product_id
          return $this->hasMany(ImageDetail::class, 'product_id');
      }
+     public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }
