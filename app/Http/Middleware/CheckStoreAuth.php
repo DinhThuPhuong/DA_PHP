@@ -9,16 +9,8 @@ use App\Models\Store;
 
 class CheckStoreAuth
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        //Kiem tr trang thai dang nhap
         if (!auth()->check()) {
             return response()->json([
                 'status' => 401,
@@ -27,20 +19,27 @@ class CheckStoreAuth
         }
 
         $user = auth()->user();
-        
-        // Kiem tra nguoi dung co store hay khong
+
         $store = Store::where('ownId', $user->id)->first();
-        //Neu khong co store thi tra ve loi
+
         if (!$store) {
-            return response()->json([
-                'status' => 403,
-                'message' => 'Unauthorized. You need to register a store first.'
+             return response()->json([
+                'status' => 403, 
+                'message' => 'No store found for this user.',
+                'reason' => 'not_found' 
             ], 403);
         }
-        // them thong tin store vao request
+
+        if ($store->status !== 'approved') {
+             return response()->json([
+                'status' => 403, 
+                'message' => 'Your store is currently ' . $store->status . '. Please wait for approval or contact support.',
+                'reason' => $store->status 
+            ], 403);
+        }
+
         $request->merge(['store' => $store]);
 
-        //Neu co store thi cho phep truy cap
         return $next($request);
     }
 }

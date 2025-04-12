@@ -13,5 +13,11 @@ class Store extends Model
         'description',
         'avatar',
         'ownId',
+        'status', 
+
     ];
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'ownId', 'id');
+    }
 }

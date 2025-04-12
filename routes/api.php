@@ -16,6 +16,7 @@ use App\Http\Controllers\UserNotificationController;
 use App\Http\Controllers\StoreNotificationController;
 use App\Models\StoreNotification;
 use App\Http\Controllers\VnPayController;
+use App\Http\Controllers\Admin\AdminStoreController;
 
 Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
     return $request->user();
@@ -30,7 +31,19 @@ Route::prefix('category')->group(function () {
         Route::delete('/delete/{id}', [CategoryController::class, 'delete']);
     });
 });
+Route::prefix('admin')->middleware(['auth:sanctum', 'is-admin'])->group(function () {
 
+    Route::get('/stores', [AdminStoreController::class, 'index']); 
+    Route::post('/stores/{storeId}/approve', [AdminStoreController::class, 'approveStore']); 
+    Route::post('/stores/{storeId}/reject', [AdminStoreController::class, 'rejectStore']);
+    Route::get('/stores/list', [AdminStoreController::class, 'listStores']); 
+
+    
+    // Route::get('/products', [AdminProductController::class, 'index']);
+    // Route::get('/users', [AdminUserController::class, 'index']);
+    // Route::get('/stats', [AdminDashboardController::class, 'getStats']);
+
+});
 //UserController
 Route::prefix('user')->group(function () {
     // Cac chuc nang can xac thuc va co quyen admin
