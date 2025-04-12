@@ -13,7 +13,7 @@ class AdminStoreController extends Controller
  
     public function index(Request $request)
     {
-        $query = Store::with('owner:id,name,email'); // Lấy thông tin cơ bản của owner
+        $query = Store::with('owner:id,firstName,lastName,email'); // Lấy thông tin cơ bản của owner
 
         if ($request->has('status') && in_array($request->status, ['pending', 'approved', 'rejected'])) {
             $query->where('status', $request->status);

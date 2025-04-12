@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Services\CloudinaryAdapter;
+use Illuminate\Support\Facades\Log;
 
 class StoreController extends Controller
 {
@@ -21,29 +22,32 @@ class StoreController extends Controller
         $this->cloudinary = $cloudinary;
     }
 
-    //Hien thi danh sach tat ca san pham cua store
+
     public function getProductsList (Request $request)
     {
-
-        $products = Product::where("store_id", $request->store->id)->get();
+        $products = Product::with('imageDetails') // <-- THÊM .with('imageDetails') VÀO ĐÂY
+                            ->where("store_id", $request->store->id)
+                            ->orderBy('created_at', 'desc') // Thêm sắp xếp nếu muốn
+                            ->get();
+        // Dữ liệu trả về giờ sẽ bao gồm mảng 'image_details' cho mỗi sản phẩm
         return response()->json($products, 200);
     }
 
-    //Hien thi danh sach tat ca don hang cua store
+
     public function getOrderList(Request $request)
     {
-        // Truy van danh don hang cung voi chi tiet don
-        $orders = Order::with('orderDetails') 
+        $orders = Order::with('orderDetails.product') // Load cả product trong order detail
             ->where("store_id", $request->store->id)
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($orders, 200);
     }
 
-    //Hien thi danh sach tat ca store 
+
     public function index()
     {
-        $store = Store::all();
+        $store = Store::where('status', 'approved')->get(); // Chỉ lấy store đã duyệt
 
         $data = [
             'status' => 200,
@@ -53,17 +57,27 @@ class StoreController extends Controller
 
     }
 
-    //Nguoi dung tao store
+
     public function create(Request $request){
         $user = Auth::user();
-        
-        //kiem tra du lieu dau vao, ten store khong cho phep trung 
+
+
+        if ($user->store()->whereIn('status', ['approved', 'pending'])->exists()) {
+             return response()->json([
+                 'status' => 403,
+                 'message' => 'You already have an active or pending store request.'
+             ], 403);
+        }
+
+
+
         $validator = Validator::make($request->all(), [
             'storeName'   => 'required|max:255|unique:store,storeName',
             'description' => 'required',
             'avatar'      => 'required|image|mimes:jpg,jpeg,png,gif,svg|max:2048'
         ]);
-         
+
+
         if ($validator->fails())
         {
             $data = [
@@ -74,7 +88,7 @@ class StoreController extends Controller
         }
 
         try {
-            // Upload anh len Cloudinary
+
             $uploadResult = $this->cloudinary->upload(
                 $request->file('avatar'),
                 [
@@ -83,79 +97,87 @@ class StoreController extends Controller
                 ]
             );
 
-            // Neu chua thi tien hanh dang ki store
+
             $store = new Store;
-            $store->ownId = $user->id;  // Su dung id cua nguoi dung dang ki store
+            $store->ownId = $user->id;
             $store->storeName = $request->storeName;
             $store->description = $request->description;
             $store->avatar = $uploadResult['secure_url'];
 
-            // Luu vao csdl 
+
             $store->save();
 
+
+             if (method_exists($user, 'refresh')) { // Optional: Refresh user relation if needed by other logic
+                 $user->refresh();
+             }
+
             $data = [
-                'status' => 200,
-                'message' => 'Successfully created a new store.',
+                'status' => 201,
+                'message' => 'Store registration request submitted successfully. Please wait for approval.',
                 'store' => $store
             ];
 
-            // Tra du lieu ve
-            return response()->json($data, 200);
+
+            return response()->json($data, 201);
 
         } catch (\Exception $e) {
+             Log::error("Store Creation Error: " . $e->getMessage());
             return response()->json([
                 'status' => 500,
-                'message' => 'Error uploading image: ' . $e->getMessage()
+                'message' => 'Error processing request: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    //Nguoi dung update thong tin store
+
     public function update_profile(Request $request)
     {
-        //Kiem tra trang thai dang nhap
+
         $user = Auth::user();
         if (!$user) {
             return response()->json([
                 'message' => 'User not authenticated.',
+            ], 401);
+        }
+
+
+        $store1 = $request->store;
+        if (!$store1) {
+             return response()->json([
+                'status' => 404,
+                'message' => "Store not found for this user."
             ], 404);
         }
 
-        // Kiem tra nguoi dung da co store chua
-        $store1 = Store::where('ownId', $user->id)->first();
-        if (!$store1) {
-            return response()->json([
-                'message' => "User has not yet registered a store.."
-            ], 500);
-        }
 
-        // Kiem tra du lieu dau vao
         $validator = Validator::make($request->all(), [
             'storeName'   => [
-                'nullable',
+                'sometimes', // only validate if present
+                'required',
                 'max:255',
                 Rule::unique('store', 'storeName')->ignore($store1->id)
             ],
-            'description' => 'nullable',
+            'description' => 'sometimes|required', // only validate if present
             'avatar'      => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:2048',
         ]);
 
         if ($validator->fails()){
             return response()->json([
                 'status'  => 422,
-                'message' => $validator->messages()
+                'message' => $validator->errors() // Trả về lỗi validation chi tiết
             ], 422);
-        } 
+        }
 
-        // Cap nhat thong tin neu du lieu khong rong
-        if ($request->has('storeName') && trim($request->storeName) !== '') {
+
+        if ($request->filled('storeName')) { // Sử dụng filled() để kiểm tra có và không rỗng
             $store1->storeName = $request->storeName;
         }
-        if ($request->has('description') && trim($request->description) !== '') {
+        if ($request->filled('description')) {
             $store1->description = $request->description;
         }
 
-        // Xu ly anh moi neu co
+
         if ($request->hasFile('avatar')) {
             try {
                 $uploadResult = $this->cloudinary->upload(
@@ -163,11 +185,13 @@ class StoreController extends Controller
                     [
                         'folder' => 'stores',
                         'public_id' => time() . '_' . pathinfo($request->file('avatar')->getClientOriginalName(), PATHINFO_FILENAME),
+                        'overwrite' => true
                     ]
                 );
-                
+
                 $store1->avatar = $uploadResult['secure_url'];
             } catch (\Exception $e) {
+                Log::error('Avatar Upload Error: '. $e->getMessage());
                 return response()->json([
                     'status' => 500,
                     'message' => 'Error uploading image: ' . $e->getMessage()
@@ -177,6 +201,9 @@ class StoreController extends Controller
 
         $store1->save();
 
+         // Refresh model data before returning
+         $store1->refresh();
+
         return response()->json([
             "status"  => 200,
             "message" => "Successfully updated store profile",
@@ -184,17 +211,17 @@ class StoreController extends Controller
         ], 200);
     }
 
-    //Tim kiem store by id
+
     public function findStoreById(int $store_id)
     {
-        $store = Store::find($store_id);
+        $store = Store::with('owner:id,firstName,lastName,email')->find($store_id); // Eager load owner info
         if (!$store) {
             return response()->json([
                 "status" => 404,
                 "message" =>"Store with id = $store_id not found"
             ],404);
         }
-        
+
         return  response()->json([
             "status"=> 200,
             "store" => $store
@@ -202,7 +229,7 @@ class StoreController extends Controller
 
     }
 
-    //Tim kiem store theo id nguoi so huu
+
     public function findStoreByOwnId(int $user_id)
     {
         $store = Store::where('ownId', $user_id)->first();
@@ -212,7 +239,7 @@ class StoreController extends Controller
                 "message" =>"Store with ownId = $user_id not found"
             ],404);
         }
-        
+
         return response()->json([
             "status"=> 200,
             "store" => $store
@@ -220,17 +247,17 @@ class StoreController extends Controller
 
     }
 
-    //Nguoi dung xoa store cua ban than
+
     public function deleteStore(Request $request)
     {
-        //Kiem tra trang thai dang nhap cua nguoi dung
+
         $user = Auth::user();
         if (!$user) {
             return response()->json([
                 'message' => 'User not authenticated.',
-            ], 404);
+            ], 401);
         }
-        $store = Store::where('ownId',$user->id)->first();
+        $store = $request->store; // Store is attached by CheckStoreAuth middleware
 
         if (!$store) {
             return response()->json([
@@ -238,17 +265,17 @@ class StoreController extends Controller
                 "message" => "Store not found"
             ], 404);
         }
-        
-        // Kiem tra quyen so huu: chi cho phep chu cua hang duoc xoa
+
+
         $store->delete();
-        
+
         return response()->json([
             "status"  => 200,
             "message" => "Store deleted successfully"
         ], 200);
     }
 
-    //Nguoi dung truy cap store cua ban than
+
     public function myStore(Request $request)
     {
         $user = Auth::user();
@@ -258,7 +285,10 @@ class StoreController extends Controller
                 "message"=> "User not authenticated."
                 ], 401);
         }
-        $store = Store::where("ownId",$user->id)->first();
+
+
+        $store = Store::where("ownId", $user->id)->first();
+
         if (!$store) {
             return response()->json([
                 "status"=> 404,
@@ -266,37 +296,42 @@ class StoreController extends Controller
                 ], 404);
         }
 
+
+        $store->load('owner:id,firstName,lastName,email'); // Tùy chọn load owner info
+
         return response()->json([
             "status"=> 200,
             "store" => $store
             ]);
-        
+
     }
 
-    //Tim kiem store theo ten(Chuc nang cua nguoi dung)
 
     public function findStoreByStoreName($storeName)
     {
-        // Tim kiem store theo ten
-        $stores = Store::where('storeName', 'LIKE', '%' . $storeName . '%')->get();
+
+        $stores = Store::where('storeName', 'LIKE', '%' . $storeName . '%')
+                       ->where('status', 'approved')
+                       ->with('owner:id,firstName,lastName,email')
+                       ->get();
 
         if ($stores->isEmpty()) {
             return response()->json([
                 "status" => 404,
-                "message" => "No stores found with name containing '$storeName'"
+                "message" => "No approved stores found with name containing '$storeName'"
             ], 404);
         }
 
         return response()->json([
             "status" => 200,
-            "stores" => $stores   
+            "stores" => $stores
         ], 200);
     }
 
-    //Cap nhat trang thai dang giao hang cho don hang (Chuc nang cua store)
+
     public function updateOrderStatus(Request $request, $order_id)
     {
-        //Kiem tra don hang co ton tai khong
+
         $order = Order::find($order_id);
         if (!$order) {
             return response()->json([
@@ -305,7 +340,7 @@ class StoreController extends Controller
             ], 404);
         }
 
-        //Kiem tra xem don hang co thuoc store hien tai khong
+
         if($order->store_id != $request->store->id){
             return response()->json([
                 "status" => 403,
@@ -313,73 +348,63 @@ class StoreController extends Controller
             ], 403);
         }
 
-        //Kiem tra trang thai hien tai cua don hang
+
         if($order->shipping_status != 'Waiting for Pickup'){
             return response()->json([
                 "status" => 400,
-              'message' => "Order with id = $order_id cannot be updated"
+                'message' => "Order with id = $order_id cannot be updated"
             ], 400);
         }
 
-        //Cap nhat trang thai don hang
+
         $order->shipping_status = "In Delivery";
         $order->save();
 
         return response()->json([
-            "status" => 200,    
+            "status" => 200,
             "message" => "Order status updated to In Delivery"
         ], 200);
     }
 
-    //Cap nhat trang thai don hang thanh "Canceled" (Chuc nang cua store)
-public function cancelOrderByStore(Request $request, $order_id)
-{
-   
-    // Truy van don hang theo order_id
-    $order = Order::find($order_id);
-    if (!$order) {
+
+    public function cancelOrderByStore(Request $request, $order_id)
+    {
+
+
+        $order = Order::find($order_id);
+        if (!$order) {
+            return response()->json([
+                'status' => 404,
+                'message' => "Order with id = $order_id not found"
+            ], 404);
+        }
+
+
+        if ($order->store_id != $request->store->id) {
+            return response()->json([
+                'status' => 403,
+                'message' => 'User is not authorized to cancel this order'
+            ], 403);
+        }
+
+
+        if ($order->shipping_status != 'Waiting for Pickup') {
+            return response()->json([
+                'status' => 400,
+                'message' => "Order with id = $order_id cannot be canceled"
+            ], 400);
+        }
+
+
+        $order->shipping_status = 'Canceled';
+        $order->save();
+
+
+         // Optionally: Restore product quantities, handle refunds etc.
+
         return response()->json([
-            'status' => 404,
-            'message' => "Order with id = $order_id not found"
-        ], 404);
+            'status' => 200,
+            'message' => "Order with id = $order_id has been canceled successfully"
+        ], 200);
     }
-
-    // Kiem tra xem nguoi dung co phai la chu store cua don hang khong
-    if ($order->store_id != $request->store->id) {
-        return response()->json([
-            'status' => 403,
-            'message' => 'User is not authorized to cancel this order'
-        ], 403);
-    }
-
-    // Kiem tra trang thai hien tai cua don hang
-    if ($order->shipping_status != 'Waiting for Pickup') {
-        return response()->json([
-            'status' => 400,
-            'message' => "Order with id = $order_id cannot be canceled"
-        ], 400);
-    }
-
-    // Cap nhat trang thai don hang thanh "Canceled"
-    $order->shipping_status = 'Canceled';
-    $order->save();
-
-    return response()->json([
-        'status' => 200,
-        'message' => "Order with id = $order_id has been canceled successfully"
-    ], 200);
-}
-
-
-
-        
-
-    
-    
-}
-     
-    
-
-
-   
-   
+}   

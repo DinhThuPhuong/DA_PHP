@@ -7,17 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     protected $table = "order";
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
-        'totalPrice',
         'user_id',
         'store_id',
-        'paymentMethod',
-        'note',
+        'total_amount', // Không phải totalPrice
         'shipping_address',
-        'shipping_status',
-        'phoneNumber',
+        'phone_number', // Không phải phoneNumber
+        'note',
+        'status', // Không phải shipping_status
+        'payment_method', // Không phải paymentMethod
         'payment_status'
     ];
 
