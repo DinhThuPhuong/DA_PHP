@@ -178,7 +178,40 @@ class StoreController extends Controller
         $store->load('owner:id,firstName,lastName,email');
         return response()->json(["success"=> true, "store" => $store ]);
     }
+    public function getPublicStoreProducts($store_id)
+    {
+        // Tìm cửa hàng theo ID và đảm bảo đã được duyệt
+        $store = Store::where('id', $store_id)
+                      ->where('status', 'approved') // Chỉ lấy store đã duyệt
+                      ->first();
 
+        if (!$store) {
+            return response()->json(['success' => false, 'message' => 'Store not found or not approved.'], 404);
+        }
+
+        // Lấy các sản phẩm đã được duyệt của cửa hàng này
+        $products = Product::with('imageDetails') // Load cả ảnh chi tiết
+                           ->where('store_id', $store_id)
+                           // ->where('isValidated', true) // QUAN TRỌNG: Bỏ comment dòng này nếu bạn muốn chỉ hiển thị sản phẩm đã được admin duyệt
+                           ->orderBy('created_at', 'desc')
+                           ->get();
+         $cleanedProducts = $products->map(function ($product) {
+             $thumbnail = $product->thumbnail ?: '/placeholder-image.png';
+             $detailUrls = $product->imageDetails->pluck('imageUrl')->toArray();
+             return [
+                 'id' => $product->id,
+                 'productName' => $product->productName,
+                 'price' => $product->price,
+                 'thumbnail' => $thumbnail, 
+                 'images' => array_merge([$thumbnail], $detailUrls), 
+                 'category_id' => $product->category_id, 
+                 'store_id' => $product->store_id,
+             ];
+        });
+
+
+        return response()->json(['success' => true, 'products' => $cleanedProducts], 200);
+    }
     public function findStoreByStoreName($storeName)
     {
         $stores = Store::where('storeName', 'LIKE', '%' . $storeName . '%')

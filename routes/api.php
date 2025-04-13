@@ -17,7 +17,9 @@ use App\Http\Controllers\StoreNotificationController;
 use App\Models\StoreNotification;
 use App\Http\Controllers\VnPayController;
 use App\Http\Controllers\Admin\AdminStoreController;
-
+use App\Http\Controllers\Admin\DashboardController; // <-- Thêm dòng này
+use App\Http\Controllers\Admin\OrderController as AdminOrderController; // <-- Thêm dòng này (dùng alias nếu cần)
+use App\Http\Controllers\Admin\UserController as AdminUserController; // <-- Thêm dòng này (dùng alias nếu cần)
 Route::middleware('auth:sanctum')->get('/user/profile', function (Request $request) {
     return $request->user();
 });
@@ -78,12 +80,15 @@ Route::prefix('store')->group(function () {
     Route::get('/', [App\Http\Controllers\StoreController::class, 'index']); // Danh sách store đã duyệt
     Route::get('/findStoreById/{store_id}', [App\Http\Controllers\StoreController::class, 'findStoreById']);
     Route::get('/findStoreByStoreName/{storeName}', [App\Http\Controllers\StoreController::class, 'findStoreByStoreName']);
+    Route::get('/{store_id}/products', [App\Http\Controllers\StoreController::class, 'getPublicStoreProducts']);
+
 });
 
 // === Các Route cần User Đăng nhập ===
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/store/create', [App\Http\Controllers\StoreController::class, 'create']); // User yêu cầu mở store
     // Thêm các route khác của user ở đây (ví dụ: follow/unfollow)
+
 });
 
 // === Các Route cần User là Chủ Store (Store Owner) ===
@@ -173,3 +178,43 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::get('/vnpay/return', [OrderController::class, 'handleVnpayReturn']);
+Route::prefix('admin')->middleware(['auth:sanctum', 'is-admin'])->group(function () {
+    Route::get('/stats', [DashboardController::class, 'getStats']);
+
+    Route::get('/orders', [AdminOrderController::class, 'getAllOrdersAdmin']);
+    // Route::get('/orders/{id}', [AdminOrderController::class, 'getOrderDetailsAdmin']); 
+    // Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateOrderStatusAdmin']);
+
+    Route::get('/users', [AdminUserController::class, 'getAllUsersAdmin']);
+    // Route::put('/users/{id}/status', [AdminUserController::class, 'updateUserStatusAdmin']); // Block/unblock
+    // Route::put('/users/{id}/role', [AdminUserController::class, 'updateUserRoleAdmin']);
+     Route::delete('/user/deleteByAdmin/{id}', [UserController::class, 'deleteUserByAdmin']); // Có thể chuyển vào AdminUserController
+
+    Route::get('/stores/list', [AdminStoreController::class, 'listStores']); // Danh sách tất cả store cho admin
+    Route::get('/stores/pending', [AdminStoreController::class, 'index']); // Danh sách store chờ duyệt
+    Route::post('/stores/{storeId}/approve', [AdminStoreController::class, 'approveStore']);
+    Route::post('/stores/{storeId}/reject', [AdminStoreController::class, 'rejectStore']);
+
+     Route::prefix('category')->group(function () {
+         Route::post('/create', [CategoryController::class, 'create']);
+         Route::put('/update/{id}', [CategoryController::class, 'update']);
+         Route::delete('/delete/{id}', [CategoryController::class, 'delete']);
+     });
+
+     Route::prefix('role')->group(function () {
+         Route::get('/', [RoleController::class, 'index']);
+         Route::post('/create', [RoleController::class, 'create']);
+         Route::put('/update/{id}', [RoleController::class, 'update']);
+         Route::delete('/delete/{id}', [RoleController::class, 'delete']);
+     });
+
+      Route::prefix('usernotifications')->group(function () {
+          Route::put('/update/{id}', [UserNotificationController::class, 'update']);
+          Route::delete('/delete/{id}', [UserNotificationController::class, 'destroy']);
+      });
+       Route::prefix('storenotification')->group(function () {
+           Route::put('/update/{id}', [StoreNotificationController::class, 'update']);
+           Route::delete('/delete/{id}', [StoreNotificationController::class, 'destroy']);
+       });
+
+});

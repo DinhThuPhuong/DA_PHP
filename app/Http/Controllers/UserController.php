@@ -60,7 +60,7 @@ class UserController extends Controller
             'firstName'        => 'required|string|max:255',
             'lastName'        => 'required|string|max:255',
             'avatar'      => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:2048', // Validate file ảnh
-            'phoneNumber' => '|string|required|max:20',
+            'phoneNumber' => '|string|max:20',
         ]);
         
         if ($validator->fails()) {
