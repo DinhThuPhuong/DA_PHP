@@ -22,389 +22,224 @@ class StoreController extends Controller
         $this->cloudinary = $cloudinary;
     }
 
-
     public function getProductsList (Request $request)
     {
-        $products = Product::with('imageDetails') // <-- THÊM .with('imageDetails') VÀO ĐÂY
-                            ->where("store_id", $request->store->id)
-                            ->orderBy('created_at', 'desc') // Thêm sắp xếp nếu muốn
-                            ->get();
-        // Dữ liệu trả về giờ sẽ bao gồm mảng 'image_details' cho mỗi sản phẩm
-        return response()->json($products, 200);
+        if (!$request->store) { return response()->json(['success' => false, 'message' => 'Store context not found.'], 403); }
+        $products = Product::with('imageDetails')
+                           ->where("store_id", $request->store->id)
+                           ->orderBy('created_at', 'desc')
+                           ->get();
+        return response()->json(['success' => true, 'products' => $products], 200);
     }
-
 
     public function getOrderList(Request $request)
     {
-        $orders = Order::with('orderDetails.product') // Load cả product trong order detail
+         if (!$request->store) {
+            return response()->json(['success' => false, 'message' => 'Store context not found.'], 403);
+         }
+        $orders = Order::with([
+                'orderDetails.product:id,productName,thumbnail',
+                'user:id,email,firstName,lastName'
+            ])
             ->where("store_id", $request->store->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json($orders, 200);
-    }
+         // Bỏ json_decode nếu model Order đã dùng $casts['shipping_address' => 'array']
+         /*
+         $orders->each(function ($order) {
+             if (is_string($order->shipping_address)) {
+                  try {
+                     $order->shipping_address = json_decode($order->shipping_address, false, 512, JSON_THROW_ON_ERROR);
+                  } catch (\JsonException $e) {
+                     Log::error("Failed to decode shipping_address for order ID {$order->id}: " . $e->getMessage());
+                     $order->shipping_address = null;
+                  }
+             }
+         });
+         */
 
+        return response()->json(['success' => true, 'orders' => $orders], 200);
+    }
 
     public function index()
     {
-        $store = Store::where('status', 'approved')->get(); // Chỉ lấy store đã duyệt
-
-        $data = [
-            'status' => 200,
-            'store' => $store
-        ];
-        return response()->json($data, 200);
-
+        $store = Store::where('status', 'approved')->get();
+        return response()->json(['success' => true, 'stores' => $store], 200); // Trả về success: true
     }
-
 
     public function create(Request $request){
         $user = Auth::user();
 
-
         if ($user->store()->whereIn('status', ['approved', 'pending'])->exists()) {
-             return response()->json([
-                 'status' => 403,
-                 'message' => 'You already have an active or pending store request.'
-             ], 403);
+             return response()->json(['success' => false, 'message' => 'You already have an active or pending store request.'], 403);
         }
-
-
 
         $validator = Validator::make($request->all(), [
             'storeName'   => 'required|max:255|unique:store,storeName',
-            'description' => 'required',
-            'avatar'      => 'required|image|mimes:jpg,jpeg,png,gif,svg|max:2048'
+            'description' => 'required|string|max:1000',
+            'avatar'      => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
 
-
-        if ($validator->fails())
-        {
-            $data = [
-                'status' => 422,
-                'message' => $validator->messages()
-            ];
-            return response()->json($data,422);
+        if ($validator->fails()) {
+             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
 
         try {
-
-            $uploadResult = $this->cloudinary->upload(
-                $request->file('avatar'),
-                [
-                    'folder' => 'stores',
-                    'public_id' => time() . '_' . pathinfo($request->file('avatar')->getClientOriginalName(), PATHINFO_FILENAME),
-                ]
-            );
-
+            $uploadResult = $this->cloudinary->upload( $request->file('avatar'), ['folder' => 'stores', 'public_id' => time() . '_' . pathinfo($request->file('avatar')->getClientOriginalName(), PATHINFO_FILENAME) ]);
 
             $store = new Store;
             $store->ownId = $user->id;
             $store->storeName = $request->storeName;
             $store->description = $request->description;
             $store->avatar = $uploadResult['secure_url'];
-
-
+            $store->status = 'pending';
             $store->save();
 
+             if (method_exists($user, 'refresh')) { $user->refresh(); }
 
-             if (method_exists($user, 'refresh')) { // Optional: Refresh user relation if needed by other logic
-                 $user->refresh();
-             }
-
-            $data = [
-                'status' => 201,
-                'message' => 'Store registration request submitted successfully. Please wait for approval.',
-                'store' => $store
-            ];
-
-
-            return response()->json($data, 201);
+            return response()->json(['success' => true, 'message' => 'Store registration request submitted successfully. Please wait for approval.', 'store' => $store ], 201);
 
         } catch (\Exception $e) {
              Log::error("Store Creation Error: " . $e->getMessage());
-            return response()->json([
-                'status' => 500,
-                'message' => 'Error processing request: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error processing request: ' . $e->getMessage()], 500);
         }
     }
-
 
     public function update_profile(Request $request)
     {
-
         $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not authenticated.',
-            ], 401);
-        }
+        if (!$user) { return response()->json(['success' => false, 'message' => 'User not authenticated.'], 401); }
 
-
-        $store1 = $request->store;
-        if (!$store1) {
-             return response()->json([
-                'status' => 404,
-                'message' => "Store not found for this user."
-            ], 404);
-        }
-
+        $store = $request->store;
+        if (!$store) { return response()->json(['success' => false, 'message' => "Store not found for this user."], 404); }
 
         $validator = Validator::make($request->all(), [
-            'storeName'   => [
-                'sometimes', // only validate if present
-                'required',
-                'max:255',
-                Rule::unique('store', 'storeName')->ignore($store1->id)
-            ],
-            'description' => 'sometimes|required', // only validate if present
+            'storeName'   => ['sometimes', 'required', 'max:255', Rule::unique('store', 'storeName')->ignore($store->id)],
+            'description' => 'sometimes|required|string|max:1000',
             'avatar'      => 'nullable|image|mimes:jpg,jpeg,png,gif,svg|max:2048',
         ]);
 
-        if ($validator->fails()){
-            return response()->json([
-                'status'  => 422,
-                'message' => $validator->errors() // Trả về lỗi validation chi tiết
-            ], 422);
-        }
+        if ($validator->fails()){ return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422); }
 
-
-        if ($request->filled('storeName')) { // Sử dụng filled() để kiểm tra có và không rỗng
-            $store1->storeName = $request->storeName;
-        }
-        if ($request->filled('description')) {
-            $store1->description = $request->description;
-        }
-
+        if ($request->filled('storeName')) { $store->storeName = $request->storeName; }
+        if ($request->filled('description')) { $store->description = $request->description; }
 
         if ($request->hasFile('avatar')) {
             try {
-                $uploadResult = $this->cloudinary->upload(
-                    $request->file('avatar'),
-                    [
-                        'folder' => 'stores',
-                        'public_id' => time() . '_' . pathinfo($request->file('avatar')->getClientOriginalName(), PATHINFO_FILENAME),
-                        'overwrite' => true
-                    ]
-                );
-
-                $store1->avatar = $uploadResult['secure_url'];
+                $uploadResult = $this->cloudinary->upload( $request->file('avatar'), ['folder' => 'stores', 'public_id' => time() . '_' . pathinfo($request->file('avatar')->getClientOriginalName(), PATHINFO_FILENAME), 'overwrite' => true ]);
+                $store->avatar = $uploadResult['secure_url'];
             } catch (\Exception $e) {
                 Log::error('Avatar Upload Error: '. $e->getMessage());
-                return response()->json([
-                    'status' => 500,
-                    'message' => 'Error uploading image: ' . $e->getMessage()
-                ], 500);
+                return response()->json(['success' => false, 'message' => 'Error uploading image: ' . $e->getMessage()], 500);
             }
         }
 
-        $store1->save();
+        $store->save();
+        $store->refresh();
 
-         // Refresh model data before returning
-         $store1->refresh();
-
-        return response()->json([
-            "status"  => 200,
-            "message" => "Successfully updated store profile",
-            "store"   => $store1
-        ], 200);
+        return response()->json(["success"  => true, "message" => "Successfully updated store profile", "store" => $store ], 200);
     }
-
 
     public function findStoreById(int $store_id)
     {
-        $store = Store::with('owner:id,firstName,lastName,email')->find($store_id); // Eager load owner info
-        if (!$store) {
-            return response()->json([
-                "status" => 404,
-                "message" =>"Store with id = $store_id not found"
-            ],404);
-        }
-
-        return  response()->json([
-            "status"=> 200,
-            "store" => $store
-        ]);
-
+        $store = Store::with('owner:id,firstName,lastName,email')->find($store_id);
+        if (!$store) { return response()->json(["success" => false, "message" =>"Store not found"], 404); }
+        return response()->json(["success"=> true, "store" => $store]);
     }
-
 
     public function findStoreByOwnId(int $user_id)
     {
         $store = Store::where('ownId', $user_id)->first();
-        if (!$store) {
-            return response()->json([
-                "status" => 404,
-                "message" =>"Store with ownId = $user_id not found"
-            ],404);
-        }
-
-        return response()->json([
-            "status"=> 200,
-            "store" => $store
-        ]);
-
+        if (!$store) { return response()->json(["success" => false, "message" =>"Store not found"], 404); }
+        return response()->json(["success"=> true, "store" => $store]);
     }
-
 
     public function deleteStore(Request $request)
     {
-
         $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not authenticated.',
-            ], 401);
-        }
-        $store = $request->store; // Store is attached by CheckStoreAuth middleware
+        if (!$user) { return response()->json(['success' => false, 'message' => 'User not authenticated.'], 401); }
 
-        if (!$store) {
-            return response()->json([
-                "status" => 404,
-                "message" => "Store not found"
-            ], 404);
-        }
-
+        $store = $request->store;
+        if (!$store) { return response()->json(["success" => false, "message" => "Store not found"], 404); }
 
         $store->delete();
-
-        return response()->json([
-            "status"  => 200,
-            "message" => "Store deleted successfully"
-        ], 200);
+        return response()->json(["success"  => true, "message" => "Store deleted successfully"], 200);
     }
-
 
     public function myStore(Request $request)
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                "status"=> 401,
-                "message"=> "User not authenticated."
-                ], 401);
-        }
-
+        if (!$user) { return response()->json(["success"=> false, "message"=> "User not authenticated."], 401); }
 
         $store = Store::where("ownId", $user->id)->first();
+        if (!$store) { return response()->json(["success"=> false, "message"=> "Store not found"], 404); }
 
-        if (!$store) {
-            return response()->json([
-                "status"=> 404,
-                "message"=> "Store not found"
-                ], 404);
-        }
-
-
-        $store->load('owner:id,firstName,lastName,email'); // Tùy chọn load owner info
-
-        return response()->json([
-            "status"=> 200,
-            "store" => $store
-            ]);
-
+        $store->load('owner:id,firstName,lastName,email');
+        return response()->json(["success"=> true, "store" => $store ]);
     }
-
 
     public function findStoreByStoreName($storeName)
     {
-
         $stores = Store::where('storeName', 'LIKE', '%' . $storeName . '%')
                        ->where('status', 'approved')
                        ->with('owner:id,firstName,lastName,email')
                        ->get();
-
-        if ($stores->isEmpty()) {
-            return response()->json([
-                "status" => 404,
-                "message" => "No approved stores found with name containing '$storeName'"
-            ], 404);
-        }
-
-        return response()->json([
-            "status" => 200,
-            "stores" => $stores
-        ], 200);
+        if ($stores->isEmpty()) { return response()->json(["success" => false, "message" => "No approved stores found"], 404); }
+        return response()->json(["success" => true, "stores" => $stores], 200);
     }
-
 
     public function updateOrderStatus(Request $request, $order_id)
     {
-
         $order = Order::find($order_id);
-        if (!$order) {
-            return response()->json([
-                "status" => 404,
-                "message" => "Order not found"
-            ], 404);
-        }
+        if (!$order) { return response()->json(["success" => false, "message" => "Order not found"], 404); }
+        if($order->store_id != $request->store->id){ return response()->json(["success" => false, "message" => "Unauthorized"], 403); }
 
+        $validator = Validator::make($request->all(), [
+             'status' => ['required', Rule::in(['Processing', 'Out for Delivery', 'Delivered', 'Canceled'])]
+        ]);
+        if ($validator->fails()) { return response()->json(['success' => false, 'message' => 'Invalid status provided.', 'errors' => $validator->errors()], 400); }
 
-        if($order->store_id != $request->store->id){
-            return response()->json([
-                "status" => 403,
-                "message" => "Unauthorized to update this order"
-            ], 403);
-        }
+        $currentStatus = $order->shipping_status;
+        $newStatus = $request->input('status');
 
+        $allowedUpdateFrom = ['Waiting for Pickup', 'Paid', 'Processing', 'Out for Delivery'];
+         if (!in_array($currentStatus, $allowedUpdateFrom)) {
+             return response()->json(['success' => false, 'message' => "Order status cannot be updated from its current state ({$currentStatus})."], 400);
+         }
 
-        if($order->shipping_status != 'Waiting for Pickup'){
-            return response()->json([
-                "status" => 400,
-                'message' => "Order with id = $order_id cannot be updated"
-            ], 400);
-        }
+        DB::beginTransaction();
+        try {
+             $order->shipping_status = $newStatus;
+             $order->save();
 
-
-        $order->shipping_status = "In Delivery";
-        $order->save();
-
-        return response()->json([
-            "status" => 200,
-            "message" => "Order status updated to In Delivery"
-        ], 200);
+             if ($newStatus === 'Canceled' && $currentStatus !== 'Canceled') {
+                  foreach ($order->orderDetails()->get() as $detail) {
+                      Product::where('id', $detail->product_id)->increment('remainQuantity', $detail->quantity);
+                      Product::where('id', $detail->product_id)->where('soldQuantity', '>=', $detail->quantity)->decrement('soldQuantity', $detail->quantity);
+                  }
+             }
+             DB::commit();
+             return response()->json(["success" => true, "message" => "Order status updated to {$newStatus}"], 200);
+         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Store updating order status error: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => "Error updating order status."], 500);
+         }
     }
-
 
     public function cancelOrderByStore(Request $request, $order_id)
     {
-
-
         $order = Order::find($order_id);
-        if (!$order) {
-            return response()->json([
-                'status' => 404,
-                'message' => "Order with id = $order_id not found"
-            ], 404);
-        }
+        if (!$order) { return response()->json(['success' => false, 'message' => "Order not found"], 404); }
+        if ($order->store_id != $request->store->id) { return response()->json(['success' => false, 'message' => 'Unauthorized'], 403); }
 
+         $allowedCancelStatuses = ['Waiting for Pickup', 'Paid', 'Pending Payment'];
+         if (!in_array($order->shipping_status, $allowedCancelStatuses)) {
+             return response()->json(['success' => false, 'message' => "Order cannot be canceled at this stage."], 400);
+         }
 
-        if ($order->store_id != $request->store->id) {
-            return response()->json([
-                'status' => 403,
-                'message' => 'User is not authorized to cancel this order'
-            ], 403);
-        }
-
-
-        if ($order->shipping_status != 'Waiting for Pickup') {
-            return response()->json([
-                'status' => 400,
-                'message' => "Order with id = $order_id cannot be canceled"
-            ], 400);
-        }
-
-
-        $order->shipping_status = 'Canceled';
-        $order->save();
-
-
-         // Optionally: Restore product quantities, handle refunds etc.
-
-        return response()->json([
-            'status' => 200,
-            'message' => "Order with id = $order_id has been canceled successfully"
-        ], 200);
+         $request->merge(['status' => 'Canceled']);
+         return $this->updateOrderStatus($request, $order_id);
     }
-}   
+}

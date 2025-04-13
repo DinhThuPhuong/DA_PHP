@@ -62,7 +62,7 @@ Route::prefix('product')->group(function () {
 
     Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
         Route::post('/create', [ProductController::class, 'create']);
-        Route::put('/update/{id}', [ProductController::class, 'update']);
+        Route::post('/update/{id}', [ProductController::class, 'update']);
         Route::delete('/delete/{id}', [ProductController::class, 'delete']);
     });
 });
@@ -75,25 +75,26 @@ Route::prefix('role')->middleware(['auth:sanctum', 'is-admin'])->group(function 
 });
 
 Route::prefix('store')->group(function () {
-    Route::get('/', [StoreController::class, 'index']);
-    Route::get('/findStoreByStoreName/{storeName}', [StoreController::class, 'findStoreByStoreName']);
-    Route::get('/findStoreById/{store_id}', [StoreController::class, 'findStoreById']);
+    Route::get('/', [App\Http\Controllers\StoreController::class, 'index']); // Danh sách store đã duyệt
+    Route::get('/findStoreById/{store_id}', [App\Http\Controllers\StoreController::class, 'findStoreById']);
+    Route::get('/findStoreByStoreName/{storeName}', [App\Http\Controllers\StoreController::class, 'findStoreByStoreName']);
+});
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/create', [StoreController::class, 'create']); // User/Admin yêu cầu tạo store
-    });
+// === Các Route cần User Đăng nhập ===
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/store/create', [App\Http\Controllers\StoreController::class, 'create']); // User yêu cầu mở store
+    // Thêm các route khác của user ở đây (ví dụ: follow/unfollow)
+});
 
-    Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
-        Route::put('/updateOrderStatus/{order_id}', [StoreController::class, 'updateOrderStatus']);
-        Route::get('/getProductsList', [StoreController::class, 'getProductsList']);
-        Route::get('/getOrderList', [StoreController::class, 'getOrderList']);
-        Route::get('/myStore', [StoreController::class, 'myStore']);
-        Route::post('/update', [StoreController::class, 'update_profile']);
-        Route::delete('/delete-store', [StoreController::class, 'deleteStore']);
-        Route::put('/cancelOrder/{order_id}', [StoreController::class, 'cancelOrderByStore']);
-        Route::post('/notifications', [UserNotificationController::class, 'store']); // Store gửi thông báo cho user
-        Route::get('/followers', [FollowerController::class, 'getStoreFollowers']);
-    });
+// === Các Route cần User là Chủ Store (Store Owner) ===
+Route::middleware(['auth:sanctum', 'is-store'])->group(function () {
+    Route::get('/store/myStore', [App\Http\Controllers\StoreController::class, 'myStore']); // Lấy thông tin store của tôi
+    Route::get('/store/products', [App\Http\Controllers\StoreController::class, 'getProductsList']); // Lấy SP của store tôi
+    Route::get('/store/orders', [App\Http\Controllers\StoreController::class, 'getOrderList']); // <-- Lấy Order của store tôi (ĐÚNG CHỖ)
+    Route::post('/store/update', [App\Http\Controllers\StoreController::class, 'update_profile']); // Cập nhật store tôi
+    Route::delete('/store/delete', [App\Http\Controllers\StoreController::class, 'deleteStore']); // Xóa store tôi
+    Route::put('/store/orders/{order_id}/status', [App\Http\Controllers\StoreController::class, 'updateOrderStatus']); // Ví dụ route cập nhật trạng thái order
+    Route::put('/store/orders/{order_id}/cancel', [App\Http\Controllers\StoreController::class, 'cancelOrderByStore']); // Ví dụ route hủy order
 });
 
 Route::prefix('usernotifications')->group(function () {
